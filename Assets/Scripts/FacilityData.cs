@@ -26,11 +26,15 @@ public class FacilityData : ScriptableObject
     public int upgradeMoneyCost = 0;            // アップグレードに必要なお金
     public List<ItemCost> upgradeItemCosts = new List<ItemCost>(); // アップグレードに必要なアイテム
 
+    [Header("自動生成設定")]
+    [Tooltip("この設備の自動生成設定")]
+    public ProductionConfig productionConfig = new ProductionConfig();
+
     /// <summary>
     /// Facilityインスタンスを生成
     /// </summary>
     public Facility CreateFacility(int level = 1, bool isUnlocked = false)
     {
-        return new Facility(facilityId, facilityName, description, level, isUnlocked, type);
+        return new Facility(facilityId, facilityName, description, level, isUnlocked, type, productionConfig);
     }
 }
