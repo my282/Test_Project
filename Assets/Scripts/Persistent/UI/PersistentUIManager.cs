@@ -36,6 +36,22 @@ public class PersistentUIManager : MonoBehaviour
     [Tooltip("情報パネルのコンテナ")]
     [SerializeField] private Transform infoContainer;
 
+    [Header("タイマー表示位置設定")]
+    [Tooltip("スクリプトでタイマー位置を設定する（falseの場合、Sceneビューで直接調整可能）")]
+    [SerializeField] private bool overrideTimerPosition = false;
+
+    [Tooltip("タイマーのアンカー最小値（0,0=左下、1,1=右上）")]
+    [SerializeField] private Vector2 timerAnchorMin = new Vector2(0.5f, 1f); // 上部中央
+
+    [Tooltip("タイマーのアンカー最大値（0,0=左下、1,1=右上）")]
+    [SerializeField] private Vector2 timerAnchorMax = new Vector2(0.5f, 1f); // 上部中央
+
+    [Tooltip("タイマーのピボット（回転/スケールの中心点）")]
+    [SerializeField] private Vector2 timerPivot = new Vector2(0.5f, 1f);
+
+    [Tooltip("タイマーの位置（アンカーからのオフセット）")]
+    [SerializeField] private Vector2 timerPosition = new Vector2(0, -20); // 上から20px下
+
     // 追加の表示要素を管理するリスト（将来の拡張用）
     private Dictionary<string, GameObject> registeredDisplays = new Dictionary<string, GameObject>();
 
@@ -75,7 +91,46 @@ public class PersistentUIManager : MonoBehaviour
         // タイマー表示の初期化
         if (timerDisplayObject != null)
         {
-            timerDisplayObject.transform.SetParent(persistentCanvas.transform, false);
+            RectTransform timerRect = timerDisplayObject.GetComponent<RectTransform>();
+            
+            // スクリプトで位置を上書きする場合
+            if (overrideTimerPosition)
+            {
+                timerDisplayObject.transform.SetParent(persistentCanvas.transform, false);
+                
+                if (timerRect != null)
+                {
+                    timerRect.anchorMin = timerAnchorMin;
+                    timerRect.anchorMax = timerAnchorMax;
+                    timerRect.pivot = timerPivot;
+                    timerRect.anchoredPosition = timerPosition;
+                }
+            }
+            else
+            {
+                // エディターで設定した位置を保持する場合
+                if (timerRect != null)
+                {
+                    // 現在の位置情報を保存
+                    Vector2 savedAnchorMin = timerRect.anchorMin;
+                    Vector2 savedAnchorMax = timerRect.anchorMax;
+                    Vector2 savedPivot = timerRect.pivot;
+                    Vector2 savedPosition = timerRect.anchoredPosition;
+                    
+                    // 親を設定（worldPositionStays = trueで位置を保持しようとする）
+                    timerDisplayObject.transform.SetParent(persistentCanvas.transform, true);
+                    
+                    // 念のため位置情報を復元
+                    timerRect.anchorMin = savedAnchorMin;
+                    timerRect.anchorMax = savedAnchorMax;
+                    timerRect.pivot = savedPivot;
+                    timerRect.anchoredPosition = savedPosition;
+                }
+                else
+                {
+                    timerDisplayObject.transform.SetParent(persistentCanvas.transform, true);
+                }
+            }
         }
     }
 
