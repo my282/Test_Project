@@ -416,6 +416,16 @@ public class GameDatabase : MonoBehaviour
     }
 
     /// <summary>
+    /// 特定の設備を所持しているか（解放済みか）確認
+    /// 新規追加した関数
+    /// </summary>
+    public bool HasFacility(string facilityId)
+    {
+        Facility facility = GetFacility(facilityId);
+        return facility != null && facility.isUnlocked;
+    }
+
+    /// <summary>
     /// 解放済みの設備のみを取得
     /// </summary>
     public List<Facility> GetUnlockedFacilities()
