@@ -272,10 +272,16 @@ public class GameDatabase : MonoBehaviour
         if (existingFacility != null)
         {
             existingFacility.isUnlocked = true;
+            
+            // 既存の設備の生成設定を更新（FacilityDataの設定を反映）
+            existingFacility.productionConfig = facilityData.productionConfig;
         }
         else
         {
-            AddFacility(facilityData.facilityId, facilityData.facilityName, facilityData.description, 1, true, facilityData.type);
+            // FacilityData.CreateFacility()を使用して生成設定も含めて作成
+            Facility newFacility = facilityData.CreateFacility(level: 1, isUnlocked: true);
+            facilities.Add(newFacility);
+            Debug.Log($"新しい設備「{facilityData.facilityName}」を追加しました。");
         }
 
         Debug.Log($"設備「{facilityData.facilityName}」を解放しました！");
