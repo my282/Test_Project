@@ -1,7 +1,13 @@
-# Facility自動生成機能 - 使い方ガイド
+# Facility自動生成機能 - 技術仕様書
+
+**最終更新**: 2026年2月12日  
+**ステータス**: ✅ TimerManager統合完了
+
+> **注意**: このドキュメントは開発者向けの技術仕様書です。  
+> 使い方ガイドは **FACILITY_PRODUCTION_USAGE_GUIDE.md** をご覧ください。
 
 ## 概要
-各Facilityに自動生成機能を追加しました。一定時間ごとにお金やアイテムを生成できます。
+各Facilityに自動生成機能を追加しました。TimerManagerと完全統合し、ゲーム時間ベースでお金やアイテムを自動生成できます。
 
 ## 作成したファイル
 
@@ -283,21 +289,24 @@ public class CustomFacilityController : MonoBehaviour
 - `totalItemsProduced`: 累計アイテム生成量（辞書）
 - `isPaused`: 一時停止中かどうか
 
-## タイマー機能との統合について
+## TimerManagerとの統合
 
-現在、生成間隔の管理には`Time.time`を使用していますが、将来`TimerManager`と統合する予定です。
+✅ **統合完了**: 2026年2月12日
+
+### 統合内容
+- ✅ `Time.time` → `TimerManager.Instance.CurrentTime`（統合完了）
+- ✅ タイマー一時停止時に自動で生成停止
+- ✅ タイマー終了時に統計表示
+- ✅ ゲーム時間に基づく正確な間隔管理
+- ✅ TimerManagerがない場合のフォールバック機能
+
+### 動作仕様
+- **TimerManagerあり**: ゲーム時間（TimerManager.CurrentTime）ベースで動作
+- **TimerManagerなし**: Time.timeをフォールバックとして使用
+- タイマー一時停止時は自動的に全施設の生成が停止
+- タイマー終了時に全施設の統計が自動表示
+
 詳細は **TIMER_INTEGRATION_GUIDE.md** を参照してください。
-
-### タイマー統合後の変更点（予定）
-- `Time.time` → `TimerManager.Instance.CurrentTime`
-- タイマー一時停止時に自動で生成停止
-- タイマー終了時に統計表示
-- ゲーム時間に基づく正確な間隔管理
-
-### 現在の仕様
-- リアル時間（Time.time）ベースで動作
-- ゲーム一時停止時も生成は継続（Time.timeを使用しているため）
-- 手動で一時停止制御が必要
 
 ## デバッグとテスト
 
@@ -354,16 +363,17 @@ controller.ShowAllProductionStats();
 // TODO: GameDatabaseにアイテムを追加
 // GameDatabase.Instance.AddItem(itemId, quantity);
 ```
-
-## 今後の拡張予定
-
-- [ ] TimerManagerとの統合
-- [ ] GameDatabaseとの連携
+x] ~~TimerManagerとの統合~~ ✅ 完了（2026/02/12）
+- [ ] GameDatabaseとの連携（TODO実装待ち）
 - [ ] レベル別生成量の自動計算
 - [ ] 条件付き生成（天候、時間帯など）
 - [ ] ブースト機能（一定時間生成量アップ）
 - [ ] UI表示（生成までの残り時間など）
 
+## 関連ドキュメント
+
+- **FACILITY_PRODUCTION_USAGE_GUIDE.md**: 使い方ガイド（ユーザー向け）
+- **TIMER_INTEGRATION_GUIDE.md**: TimerManager統合完了報告書
 ## 関連ドキュメント
 
 - **TIMER_INTEGRATION_GUIDE.md**: タイマー統合の詳細手順

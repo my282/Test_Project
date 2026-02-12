@@ -4,6 +4,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Facilityの自動生成を管理するコントローラー
 /// 各Facilityの生成処理を一元管理し、GameDatabaseと連携
+/// シーンを跨いで永続化されるシングルトン
 /// </summary>
 public class FacilityProductionController : MonoBehaviour
 {
@@ -11,48 +12,89 @@ public class FacilityProductionController : MonoBehaviour
     [Tooltip("デバッグログを表示")]
     [SerializeField] private bool showDebugLog = true;
 
+    // シングルトンインスタンス
+    private static FacilityProductionController instance;
+    public static FacilityProductionController Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindObjectOfType<FacilityProductionController>();
+            }
+            return instance;
+        }
+    }
+
     // 管理しているFacilityのリスト
     private List<Facility> managedFacilities = new List<Facility>();
 
-    // TODO: タイマー機能実装後の統合
-    // ========================================
-    // TimerManagerと連携する際の実装手順:
-    // 
-    // 1. TimerManager.Instanceの存在チェック
-    //    if (TimerManager.Instance == null) return;
-    //
-    // 2. TimerManager.Instance.CheckInterval()を使用
-    //    foreach (var facility in managedFacilities)
-    //    {
-    //        if (TimerManager.Instance.CheckInterval(
-    //            facility.productionConfig.productionInterval,
-    //            ref facility.productionState.lastProductionTime))
-    //        {
-    //            ProduceFacilityResources(facility);
-    //        }
-    //    }
-    //
-    // 3. TimerManagerのイベントに登録
-    //    void Start()
-    //    {
-    //        TimerManager.Instance.OnTimerPausedChanged += OnTimerPausedChanged;
-    //        TimerManager.Instance.OnTimerFinished += OnTimerFinished;
-    //    }
-    //
-    // 4. イベントハンドラーの実装
-    //    void OnTimerPausedChanged(bool isPaused)
-    //    {
-    //        foreach (var facility in managedFacilities)
-    //        {
-    //            facility.productionState.isPaused = isPaused;
-    //        }
-    //    }
-    // ========================================
+    // TimerManagerが利用可能かどうか
+    private bool useTimerManager = false;
+
+    private void Awake()
+    {
+        // シングルトンパターン
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+        DontDestroyOnLoad(gameObject); // シーンを跨いで永続化
+
+        if (showDebugLog)
+        {
+            Debug.Log("FacilityProductionController: DontDestroyOnLoadに設定されました");
+        }
+    }
+
+    private void Start()
+    {
+        // TimerManagerのイベントに登録
+        if (TimerManager.Instance != null)
+        {
+            useTimerManager = true;
+            TimerManager.Instance.OnTimerPausedChanged += OnTimerPausedChanged;
+            TimerManager.Instance.OnTimerFinished += OnTimerFinished;
+            TimerManager.Instance.OnTimerStarted += OnTimerStarted;
+
+            if (showDebugLog)
+            {
+                Debug.Log("FacilityProductionController: TimerManagerと統合しました");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("FacilityProductionController: TimerManagerが見つかりません。Time.timeをフォールバックとして使用します。");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // イベント解除
+        if (TimerManager.Instance != null)
+        {
+            TimerManager.Instance.OnTimerPausedChanged -= OnTimerPausedChanged;
+            TimerManager.Instance.OnTimerFinished -= OnTimerFinished;
+            TimerManager.Instance.OnTimerStarted -= OnTimerStarted;
+        }
+    }
 
     private void Update()
     {
-        // 現在は通常のTime.timeを使用（タイマー実装後に置き換え）
-        UpdateFacilityProduction();
+        // TimerManagerが利用可能な場合はそちらを使用
+        if (useTimerManager && TimerManager.Instance != null && TimerManager.Instance.IsRunning)
+        {
+            UpdateFacilityProductionWithTimer();
+        }
+        else if (!useTimerManager || TimerManager.Instance == null)
+        {
+            // フォールバック: Time.timeを使用
+            UpdateFacilityProduction();
+        }
+        // else: TimerManagerはあるが停止中 → 何もしない
     }
 
     /// <summary>
@@ -73,11 +115,24 @@ public class FacilityProductionController : MonoBehaviour
         }
 
         managedFacilities.Add(facility);
-        facility.productionState.lastProductionTime = Time.time;
+        
+        // TimerManagerがあればそちらを使用、なければTime.time
+        if (useTimerManager && TimerManager.Instance != null)
+        {
+            facility.productionState.lastProductionTime = TimerManager.Instance.CurrentTime;
+        }
+        else
+        {
+            facility.productionState.lastProductionTime = Time.time;
+        }
 
         if (showDebugLog)
         {
             Debug.Log($"Facility '{facility.facilityName}' registered for production.");
+            Debug.Log($"  - Production Type: {facility.productionConfig.productionType}");
+            Debug.Log($"  - Interval: {facility.productionConfig.productionInterval}s");
+            Debug.Log($"  - Using Timer: {(useTimerManager ? "TimerManager" : "Time.time")}");
+            Debug.Log($"  - IsValid: {facility.productionConfig.IsValid()}");
         }
     }
 
@@ -98,10 +153,12 @@ public class FacilityProductionController : MonoBehaviour
     }
 
     /// <summary>
-    /// すべてのFacilityの生成状態を更新
+    /// すべてのFacilityの生成状態を更新（Time.timeを使用したフォールバック）
     /// </summary>
     private void UpdateFacilityProduction()
     {
+        if (managedFacilities.Count == 0) return;
+        
         foreach (var facility in managedFacilities)
         {
             // 解放されていない、または設定が無効な場合はスキップ
@@ -112,7 +169,7 @@ public class FacilityProductionController : MonoBehaviour
             if (facility.productionState.isPaused)
                 continue;
 
-            // 時間チェック（現在はTime.timeを使用）
+            // 時間チェック（Time.timeを使用）
             float currentTime = Time.time;
             float elapsed = currentTime - facility.productionState.lastProductionTime;
 
@@ -120,6 +177,33 @@ public class FacilityProductionController : MonoBehaviour
             {
                 ProduceFacilityResources(facility);
                 facility.productionState.lastProductionTime = currentTime;
+            }
+        }
+    }
+
+    /// <summary>
+    /// TimerManagerを使用した生成更新
+    /// </summary>
+    private void UpdateFacilityProductionWithTimer()
+    {
+        if (managedFacilities.Count == 0) return;
+        
+        foreach (var facility in managedFacilities)
+        {
+            // 解放されていない、または設定が無効な場合はスキップ
+            if (!facility.isUnlocked || !facility.productionConfig.IsValid())
+                continue;
+
+            // 一時停止中はスキップ
+            if (facility.productionState.isPaused)
+                continue;
+
+            // TimerManagerのCheckIntervalメソッドを使用
+            if (TimerManager.Instance.CheckInterval(
+                facility.productionConfig.productionInterval,
+                ref facility.productionState.lastProductionTime))
+            {
+                ProduceFacilityResources(facility);
             }
         }
     }
@@ -137,8 +221,15 @@ public class FacilityProductionController : MonoBehaviour
         {
             moneyProduced = facility.productionConfig.moneyAmount;
             
-            // TODO: GameDatabaseにお金を追加
-            // GameDatabase.Instance.AddMoney(moneyProduced);
+            // GameDatabaseにお金を追加
+            if (GameDatabase.Instance != null)
+            {
+                GameDatabase.Instance.AddMoney(moneyProduced);
+            }
+            else
+            {
+                Debug.LogWarning($"[{facility.facilityName}] GameDatabaseが見つかりません。お金を追加できません。");
+            }
             
             if (showDebugLog)
             {
@@ -154,8 +245,31 @@ public class FacilityProductionController : MonoBehaviour
                 string itemId = itemProd.GetItemId();
                 int quantity = itemProd.quantity;
 
-                // TODO: GameDatabaseにアイテムを追加
-                // GameDatabase.Instance.AddItem(itemId, quantity);
+                // GameDatabaseにアイテムを追加
+                if (GameDatabase.Instance != null)
+                {
+                    // MasterDatabaseからItemDataを取得
+                    ItemData itemData = MasterDatabase.Instance?.GetItemData(itemId);
+                    
+                    if (itemData != null)
+                    {
+                        GameDatabase.Instance.AddItem(
+                            itemId, 
+                            itemData.itemName, 
+                            itemData.description, 
+                            quantity, 
+                            itemData.type
+                        );
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[{facility.facilityName}] ItemData '{itemId}' が見つかりません。MasterDatabaseに登録してください。");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[{facility.facilityName}] GameDatabaseが見つかりません。アイテムを追加できません。");
+                }
 
                 itemsProduced[itemId] = quantity;
 
@@ -264,5 +378,58 @@ public class FacilityProductionController : MonoBehaviour
         {
             Debug.Log("All facility production states reset.");
         }
+    }
+
+    // ========================================
+    // TimerManagerイベントハンドラー
+    // ========================================
+
+    /// <summary>
+    /// タイマー開始時の処理
+    /// </summary>
+    private void OnTimerStarted()
+    {
+        if (showDebugLog)
+        {
+            Debug.Log("FacilityProductionController: タイマーが開始されました。生成を開始します。");
+        }
+
+        // すべてのFacilityの一時停止を解除
+        SetAllProductionPaused(false);
+
+        // lastProductionTimeをTimerManagerの時間で初期化
+        foreach (var facility in managedFacilities)
+        {
+            facility.productionState.lastProductionTime = TimerManager.Instance.CurrentTime;
+        }
+    }
+
+    /// <summary>
+    /// タイマー一時停止状態変更時の処理
+    /// </summary>
+    private void OnTimerPausedChanged(bool isPaused)
+    {
+        if (showDebugLog)
+        {
+            Debug.Log($"FacilityProductionController: タイマーが{(isPaused ? "一時停止" : "再開")}されました。");
+        }
+
+        // すべてのFacilityの生成を一時停止/再開
+        SetAllProductionPaused(isPaused);
+    }
+
+    /// <summary>
+    /// タイマー終了時の処理
+    /// </summary>
+    private void OnTimerFinished()
+    {
+        if (showDebugLog)
+        {
+            Debug.Log("FacilityProductionController: タイマーが終了しました。生成を停止します。");
+            ShowAllProductionStats();
+        }
+
+        // すべての生成を停止
+        SetAllProductionPaused(true);
     }
 }

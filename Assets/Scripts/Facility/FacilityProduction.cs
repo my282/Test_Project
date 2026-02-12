@@ -38,17 +38,12 @@ public class ProductionConfig
     [Tooltip("自動生成を有効化")]
     public bool enableAutoProduction = true;
 
-    // TODO: タイマー機能実装後の統合ポイント
-    // TimerManagerと統合する際は以下の実装を追加：
-    // 1. TimerManager.Instance.CheckInterval() を使用して時間チェック
-    // 2. TimerManager.OnTimerFinished イベントでゲーム終了時の処理
-    // 3. TimerManager.OnTimerPaused で一時停止時の生成停止
-    // 
-    // 実装例:
-    // if (TimerManager.Instance.CheckInterval(productionInterval, ref lastProductionTime))
-    // {
-    //     ProduceResources();
-    // }
+    // NOTE: TimerManager統合完了
+    // FacilityProductionControllerでTimerManagerと統合済み
+    // - CheckInterval()メソッドを使用した時間チェック
+    // - OnTimerFinishedイベントでゲーム終了時の処理
+    // - OnTimerPausedChangedイベントで一時停止時の生成制御
+    // - OnTimerStartedイベントで開始時の初期化
 
     /// <summary>
     /// お金を生成するか

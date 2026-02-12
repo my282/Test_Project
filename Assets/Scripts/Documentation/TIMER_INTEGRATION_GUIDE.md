@@ -1,12 +1,15 @@
-# Facility自動生成機能 - タイマー統合手順書
+# Facility自動生成機能 - TimerManager統合完了報告書
 
-## 概要
-Facilityの自動生成機能は現在Time.timeを使用していますが、将来TimerManagerと統合する必要があります。
-このドキュメントではその統合手順を詳しく説明します。
+## 統合状況
 
-## 現在の実装状況
+**✅ 統合完了日**: 2026年2月12日
 
-### 実装済み機能
+Facilityの自動生成機能とTimerManagerの統合が完了しました。
+このドキュメントでは統合内容と今後のメンテナンスガイドを説明します。
+
+## 実装済み機能
+
+### 基本機能
 - ✅ 生成設定データ構造 (ProductionConfig, ItemProduction, ProductionState)
 - ✅ FacilityDataへの生成設定の追加
 - ✅ Facilityクラスの拡張（生成設定・状態管理）
@@ -15,52 +18,53 @@ Facilityの自動生成機能は現在Time.timeを使用していますが、将
 - ✅ 生成間隔の設定
 - ✅ 生成統計の記録
 
-### 未実装（タイマー統合待ち）
-- ⏳ TimerManagerとの連携
-- ⏳ ゲーム時間に基づく生成管理
-- ⏳ タイマー一時停止時の生成停止
-- ⏳ タイマー終了時の処理
+### TimerManager統合機能
+- ✅ TimerManagerとの連携
+- ✅ ゲーム時間に基づく生成管理
+- ✅ タイマー一時停止時の生成停止
+- ✅ タイマー終了時の処理
+- ✅ Time.timeへのフォールバック機能
 
-## タイマー統合手順
+## 統合内容の詳細
 
-### ステップ1: TimerManagerの準備確認
+## 統合内容の詳細
 
-統合前に、以下が実装されていることを確認：
-- [x] `Assets/Scripts/Persistent/Managers/TimerManager.cs` が存在
-- [x] TimerManagerがシングルトンとして実装されている
-- [x] `CheckInterval(float interval, ref float lastCheckTime)` メソッドが存在
-- [x] イベント: OnTimerPausedChanged, OnTimerFinished が定義されている
+### 1. FacilityProductionController.cs の変更
 
-### ステップ2: FacilityProductionControllerの修正
-
-#### 2.1 フィールドの修正
-
-**変更前:**
+#### 追加されたフィールド
 ```csharp
-private void Update()
-{
-    // 現在は通常のTime.timeを使用（タイマー実装後に置き換え）
-    UpdateFacilityProduction();
-}
+// TimerManagerが利用可能かどうか
+private bool useTimerManager = false;
 ```
 
-**変更後:**
+#### Start() メソッドの追加
+TimerManagerの初期化とイベント登録：
 ```csharp
 private void Start()
 {
     // TimerManagerのイベントに登録
     if (TimerManager.Instance != null)
     {
+        useTimerManager = true;
         TimerManager.Instance.OnTimerPausedChanged += OnTimerPausedChanged;
         TimerManager.Instance.OnTimerFinished += OnTimerFinished;
         TimerManager.Instance.OnTimerStarted += OnTimerStarted;
+
+        if (showDebugLog)
+        {
+            Debug.Log("FacilityProductionController: TimerManagerと統合しました");
+        }
     }
     else
     {
-        Debug.LogWarning("TimerManager not found! Using fallback Time.time.");
+        Debug.LogWarning("FacilityProductionController: TimerManagerが見つかりません。Time.timeをフォールバックとして使用します。");
     }
 }
+```
 
+#### OnDestroy() メソッドの追加
+イベントのクリーンアップ：
+```csharp
 private void OnDestroy()
 {
     // イベント解除
@@ -71,11 +75,15 @@ private void OnDestroy()
         TimerManager.Instance.OnTimerStarted -= OnTimerStarted;
     }
 }
+```
 
+#### Update() メソッドの修正
+TimerManagerとTime.timeの切り替え：
+```csharp
 private void Update()
 {
     // TimerManagerが利用可能な場合はそちらを使用
-    if (TimerManager.Instance != null && TimerManager.Instance.IsRunning)
+    if (useTimerManager && TimerManager.Instance != null && TimerManager.Instance.IsRunning)
     {
         UpdateFacilityProductionWithTimer();
     }
@@ -87,10 +95,8 @@ private void Update()
 }
 ```
 
-#### 2.2 TimerManager連携メソッドの追加
-
-**FacilityProductionController.csに追加:**
-
+#### UpdateFacilityProductionWithTimer() メソッドの追加
+TimerManagerを使用した新しい生成更新ロジック：
 ```csharp
 /// <summary>
 /// TimerManagerを使用した生成更新
@@ -107,7 +113,7 @@ private void UpdateFacilityProductionWithTimer()
         if (facility.productionState.isPaused)
             continue;
 
-        // TimerManagerのCheckIntervalを使用
+        // TimerManagerのCheckIntervalメソッドを使用
         if (TimerManager.Instance.CheckInterval(
             facility.productionConfig.productionInterval,
             ref facility.productionState.lastProductionTime))
@@ -116,163 +122,85 @@ private void UpdateFacilityProductionWithTimer()
         }
     }
 }
+```
 
-/// <summary>
-/// タイマー一時停止/再開時の処理
-/// </summary>
-private void OnTimerPausedChanged(bool isPaused)
-{
-    SetAllProductionPaused(isPaused);
-    
-    if (showDebugLog)
-    {
-        Debug.Log($"Timer {(isPaused ? "paused" : "resumed")} - All facility production {(isPaused ? "stopped" : "started")}.");
-    }
-}
+#### TimerManagerイベントハンドラーの追加
 
-/// <summary>
-/// タイマー終了時の処理
-/// </summary>
-private void OnTimerFinished()
-{
-    SetAllProductionPaused(true);
-    
-    if (showDebugLog)
-    {
-        Debug.Log("Timer finished - All facility production stopped.");
-        ShowAllProductionStats();
-    }
-}
-
-/// <summary>
-/// タイマー開始時の処理
-/// </summary>
+**OnTimerStarted()** - タイマー開始時の処理：
+```csharp
 private void OnTimerStarted()
 {
-    // すべてのFacilityの最終生成時刻をリセット
+    if (showDebugLog)
+    {
+        Debug.Log("FacilityProductionController: タイマーが開始されました。生成を開始します。");
+    }
+
+    // すべてのFacilityの一時停止を解除
+    SetAllProductionPaused(false);
+
+    // lastProductionTimeをTimerManagerの時間で初期化
     foreach (var facility in managedFacilities)
     {
         facility.productionState.lastProductionTime = TimerManager.Instance.CurrentTime;
     }
-    
+}
+```
+
+**OnTimerPausedChanged()** - 一時停止状態変更時の処理：
+```csharp
+private void OnTimerPausedChanged(bool isPaused)
+{
     if (showDebugLog)
     {
-        Debug.Log("Timer started - Facility production initialized.");
+        Debug.Log($"FacilityProductionController: タイマーが{(isPaused ? "一時停止" : "再開")}されました。");
     }
+
+    // すべてのFacilityの生成を一時停止/再開
+    SetAllProductionPaused(isPaused);
 }
 ```
 
-#### 2.3 RegisterFacilityメソッドの修正
-
-**変更前:**
+**OnTimerFinished()** - タイマー終了時の処理：
 ```csharp
-managedFacilities.Add(facility);
-facility.productionState.lastProductionTime = Time.time;
-```
-
-**変更後:**
-```csharp
-managedFacilities.Add(facility);
-
-// TimerManagerがあればそちらを使用
-if (TimerManager.Instance != null)
+private void OnTimerFinished()
 {
-    facility.productionState.lastProductionTime = TimerManager.Instance.CurrentTime;
-}
-else
-{
-    facility.productionState.lastProductionTime = Time.time;
-}
-```
-
-#### 2.4 ManualProduceResourcesメソッドの修正
-
-**変更前:**
-```csharp
-ProduceFacilityResources(facility);
-facility.productionState.lastProductionTime = Time.time;
-```
-
-**変更後:**
-```csharp
-ProduceFacilityResources(facility);
-
-// TimerManagerがあればそちらを使用
-if (TimerManager.Instance != null)
-{
-    facility.productionState.lastProductionTime = TimerManager.Instance.CurrentTime;
-}
-else
-{
-    facility.productionState.lastProductionTime = Time.time;
-}
-```
-
-### ステップ3: ProductionStateの修正（オプション）
-
-タイマーの経過時間を記録したい場合、ProductionStateに追加フィールドを検討：
-
-```csharp
-[Serializable]
-public class ProductionState
-{
-    // 既存のフィールド...
-    
-    [Tooltip("最初に生成を開始したゲーム内時刻")]
-    public float firstProductionGameTime;
-    
-    [Tooltip("ゲーム内時間での累計生成時間")]
-    public float totalProductionGameTime;
-}
-```
-
-### ステップ4: GameDatabaseとの統合
-
-ProduceFacilityResourcesメソッド内のTODOコメントを実装：
-
-```csharp
-// お金の生成
-if (facility.productionConfig.ProducesMoney())
-{
-    moneyProduced = facility.productionConfig.moneyAmount;
-    
-    // GameDatabaseにお金を追加
-    if (GameDatabase.Instance != null)
-    {
-        GameDatabase.Instance.AddMoney(moneyProduced);
-    }
-    
     if (showDebugLog)
     {
-        Debug.Log($"[{facility.facilityName}] お金を生成: {moneyProduced}");
+        Debug.Log("FacilityProductionController: タイマーが終了しました。生成を停止します。");
+        ShowAllProductionStats();
     }
-}
 
-// アイテムの生成
-if (facility.productionConfig.ProducesItems())
-{
-    foreach (var itemProd in facility.productionConfig.itemProductions)
-    {
-        string itemId = itemProd.GetItemId();
-        int quantity = itemProd.quantity;
-
-        // GameDatabaseにアイテムを追加
-        if (GameDatabase.Instance != null)
-        {
-            GameDatabase.Instance.AddItem(itemId, quantity);
-        }
-
-        itemsProduced[itemId] = quantity;
-
-        if (showDebugLog)
-        {
-            Debug.Log($"[{facility.facilityName}] アイテムを生成: {itemId} x{quantity}");
-        }
-    }
+    // すべての生成を停止
+    SetAllProductionPaused(true);
 }
 ```
 
-### ステップ5: テスト手順
+### 2. FacilityProduction.cs の変更
+
+TODOコメントを更新し、統合完了を明記：
+```csharp
+// NOTE: TimerManager統合完了
+// FacilityProductionControllerでTimerManagerと統合済み
+// - CheckInterval()メソッドを使用した時間チェック
+// - OnTimerFinishedイベントでゲーム終了時の処理
+// - OnTimerPausedChangedイベントで一時停止時の生成制御
+// - OnTimerStartedイベントで開始時の初期化
+```
+
+## 動作仕様
+
+### TimerManagerが利用可能な場合
+1. タイマー開始時に全Facilityの`lastProductionTime`を初期化
+2. `TimerManager.CheckInterval()`を使用して生成間隔を管理
+3. タイマー一時停止時に全Facilityの生成を停止
+4. タイマー終了時に生成を停止し、統計を表示
+
+### TimerManagerが利用できない場合（フォールバック）
+1. 従来通り`Time.time`を使用
+2. 手動での一時停止制御のみ可能
+3. タイマーイベントは受け取らない
+
+## テスト手順
 
 1. **単体テスト**
    - TimerManagerなしで従来通り動作するか確認
@@ -303,6 +231,66 @@ if (facility.productionConfig.ProducesItems())
 - [ ] GameDatabase連携コードのTODOを実装
 - [ ] 単体テストを実施
 - [ ] 統合テストを実施
+
+## 今後の作業
+
+### GameDatabase連携の実装
+
+`ProduceFacilityResources()`メソッド内のTODOコメントを実装する必要があります：
+
+```csharp
+// お金の生成
+if (facility.productionConfig.ProducesMoney())
+{
+    moneyProduced = facility.productionConfig.moneyAmount;
+    
+    // TODO: GameDatabaseにお金を追加
+    // if (GameDatabase.Instance != null)
+    // {
+    //     GameDatabase.Instance.AddMoney(moneyProduced);
+    // }
+    
+    if (showDebugLog)
+    {
+        Debug.Log($"[{facility.facilityName}] お金を生成: {moneyProduced}");
+    }
+}
+
+// アイテムの生成
+if (facility.productionConfig.ProducesItems())
+{
+    foreach (var itemProd in facility.productionConfig.itemProductions)
+    {
+        string itemId = itemProd.GetItemId();
+        int quantity = itemProd.quantity;
+
+        // TODO: GameDatabaseにアイテムを追加
+        // if (GameDatabase.Instance != null)
+        // {
+        //     GameDatabase.Instance.AddItem(itemId, quantity);
+        // }
+
+        itemsProduced[itemId] = quantity;
+
+        if (showDebugLog)
+        {
+            Debug.Log($"[{facility.facilityName}] アイテムを生成: {itemId} x{quantity}");
+        }
+    }
+}
+```
+
+### オプション機能の検討
+
+必要に応じて以下の機能を追加することを検討：
+
+1. **ProductionStateの拡張**
+   - ゲーム内時間での累計生成時間の記録
+   - 最初の生成開始時刻の記録
+
+2. **RegisterFacility/ManualProduceResourcesの改善**
+   - TimerManagerの時間を優先的に使用するよう修正
+   - 現在はTime.timeで初期化されている
 
 ## 注意事項
 
@@ -354,3 +342,42 @@ private void CheckProduction()
 ```
 
 このパターンをFacilityProductionControllerに適用してください。
+テスト手順
+
+統合機能の動作確認：
+
+1. **TimerManagerありでの動作確認**
+   - [ ] TimerManager.StartTimer()を呼び出し、タイマーを開始
+   - [ ] Facilityが設定した間隔で生成を行うか確認
+   - [ ] デバッグログで「TimerManagerと統合しました」が表示されることを確認
+
+2. **一時停止機能の確認**
+   - [ ] TimerManager.TogglePause()でタイマーを一時停止
+   - [ ] すべてのFacilityの生成が停止することを確認
+   - [ ] 再開時に生成が再開されることを確認
+
+3. **タイマー終了処理の確認**
+   - [ ] タイマーが終了したとき、すべての生成が停止することを確認
+   - [ ] 生成統計が表示されることを確認
+
+4. **フォールバック機能の確認**
+   - [ ] TimerManagerオブジェクトを削除
+   - [ ] Time.timeを使用したフォールバック処理が動作することを確認
+   - [ ] 警告ログ「TimerManagerが見つかりません」が表示されることを確認
+
+5. **複数Facilityの動作確認**
+   - [ ] 異なる生成間隔を持つ複数のFacilityを登録
+   - [ ] それぞれが正しい間隔で生成を行うか確認
+
+## 完了チェックリスト
+
+統合作業の確認項目：
+
+- [x] TimerManager.Instanceの存在確認コードを追加
+- [x] OnTimerPausedChangedイベントハンドラーを実装
+- [x] OnTimerFinishedイベントハンドラーを実装
+- [x] OnTimerStartedイベントハンドラーを実装
+- [x] CheckInterval()メソッドを使用するよう変更
+- [x] Time.timeへのフォールバック処理を実装
+- [x] OnDestroyでイベント解除を実装
+- [ ] GameDatabase連携コードのTODO実装（今後の作業）
