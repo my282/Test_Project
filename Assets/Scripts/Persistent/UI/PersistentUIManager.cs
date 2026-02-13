@@ -271,6 +271,22 @@ public class PersistentUIManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 所持金表示の表示/非表示
+    /// </summary>
+    public void ToggleMoneyDisplay(bool visible)
+    {
+        ToggleDisplay("Money", visible);
+    }
+
+    /// <summary>
+    /// 総資産表示の表示/非表示
+    /// </summary>
+    public void ToggleTotalAssetsDisplay(bool visible)
+    {
+        ToggleDisplay("TotalAssets", visible);
+    }
+
+    /// <summary>
     /// Canvasの表示順序を設定
     /// </summary>
     public void SetCanvasSortOrder(int order)

@@ -2,12 +2,12 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// 総資産を表示するUIコンポーネント
+/// 所持金を表示するUIコンポーネント
 /// GameDatabaseのイベントに連携して自動更新
 /// </summary>
-public class TotalAssetsDisplay : PersistentInfoDisplay
+public class MoneyDisplay : PersistentInfoDisplay
 {
-    [Header("資産表示設定")]
+    [Header("所持金表示設定")]
     [SerializeField] private string currencySymbol = "¥";
     [SerializeField] private bool useThousandSeparator = true;
 
@@ -18,7 +18,7 @@ public class TotalAssetsDisplay : PersistentInfoDisplay
         // GameDatabaseのイベントに登録
         if (GameDatabase.Instance != null)
         {
-            GameDatabase.Instance.OnAssetsChanged += UpdateDisplay;
+            GameDatabase.Instance.OnMoneyChanged += UpdateDisplay;
         }
         
         // 初期表示を更新
@@ -32,13 +32,13 @@ public class TotalAssetsDisplay : PersistentInfoDisplay
         // イベント解除
         if (GameDatabase.Instance != null)
         {
-            GameDatabase.Instance.OnAssetsChanged -= UpdateDisplay;
+            GameDatabase.Instance.OnMoneyChanged -= UpdateDisplay;
         }
     }
 
     protected override void InitializeDisplay()
     {
-        displayPrefix = "Total assets: ";
+        displayPrefix = "money: ";
         base.InitializeDisplay();
     }
 
@@ -50,14 +50,14 @@ public class TotalAssetsDisplay : PersistentInfoDisplay
             return;
         }
         
-        int totalAssets = GameDatabase.Instance.GetTotalAssets();
-        string formattedAssets = FormatCurrency(totalAssets);
-        SetText(formattedAssets);
+        int money = GameDatabase.Instance.GetMoney();
+        string formattedMoney = FormatCurrency(money);
+        SetText(formattedMoney);
     }
 
     protected override string GetDisplayKey()
     {
-        return "TotalAssets";
+        return "Money";
     }
 
     /// <summary>

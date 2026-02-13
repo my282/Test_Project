@@ -15,7 +15,8 @@ Assets/Scripts/Persistent/
 │   ├── PersistentUIManager.cs       # 永続UI管理（シングルトン）
 │   ├── TimerDisplay.cs              # タイマー表示UI
 │   ├── PersistentInfoDisplay.cs     # 情報表示の基底クラス
-│   └── TotalAssetsDisplay.cs        # 総資産表示の例
+│   ├── MoneyDisplay.cs              # 所持金表示UI
+│   └── TotalAssetsDisplay.cs        # 総資産表示UI
 └── README_Persistent.md             # このファイル
 ```
 
@@ -78,7 +79,51 @@ string timeStr = TimerManager.Instance.GetFormattedTime(); // "05:30"
 - 点滅エフェクト
 - 2つの表示フォーマット（MM:SS / HH:MM:SS）
 
-### 4. PersistentInfoDisplay (抽象クラス)
+### 4. MoneyDisplay
+プレイヤーの所持金を表示するUIコンポーネント。
+
+**特徴:**
+- GameDatabaseのOnMoneyChangedイベントに連携
+- 変更があった時のみ自動更新（イベント駆動）
+- カンマ区切りフォーマット対応
+- 通貨記号のカスタマイズ可能
+
+**使用例:**
+```csharp
+// 所持金を追加すると自動的に表示が更新される
+GameDatabase.Instance.AddMoney(1000);
+
+// 表示/非表示切り替え
+PersistentUIManager.Instance.ToggleMoneyDisplay(false);
+```
+
+### 5. TotalAssetsDisplay
+プレイヤーの総資産を表示するUIコンポーネント。
+
+**特徴:**
+- GameDatabaseのOnAssetsChangedイベントに連携
+- 所持金、アイテム、設備の価値を合算
+- 変更があった時のみ自動更新（イベント駆動）
+- カンマ区切りフォーマット対応
+
+**計算内容:**
+- 所持金: playerMoney
+- アイテム価値: basePrice × quantity の合計
+- 設備価値: 解放コスト + アップグレードコスト × (レベル - 1)
+
+**使用例:**
+```csharp
+// 総資産を取得
+int total = GameDatabase.Instance.GetTotalAssets();
+
+// アイテム追加時やFacilityの自動生成時に自動更新される
+GameDatabase.Instance.AddItem("item1", "木材", "説明", 10, ItemType.Material);
+
+// 表示/非表示切り替え
+PersistentUIManager.Instance.ToggleTotalAssetsDisplay(true);
+```
+
+### 6. PersistentInfoDisplay (抽象クラス)
 永続表示される情報の基底クラス。
 
 **使い方:**
@@ -100,7 +145,7 @@ public class MyCustomDisplay : PersistentInfoDisplay
 }
 ```
 
-### 5. TimerBasedFacility
+### 7. TimerBasedFacility
 Facilityからタイマーを利用する例。
 
 **特徴:**
@@ -154,11 +199,24 @@ public class MyFacility : MonoBehaviour
 3. TextMeshProUGUIコンポーネントをTimerDisplayの`Timer Text`にドラッグ
 4. 表示設定を調整（警告色、点滅など）
 
-### 総資産表示の追加（例）
+### 所持金表示の追加
+1. UI > Text - TextMeshPro を作成
+2. `MoneyDisplay`スクリプトをアタッチ
+3. TextMeshProUGUIコンポーネントをMoneyDisplayの`Display Text`にドラッグ
+4. 自動的にPersistentUIManagerに登録され、GameDatabaseと連携します
+5. 表示設定を調整（通貨記号、カンマ区切りなど）
+
+### 総資産表示の追加
 1. UI > Text - TextMeshPro を作成
 2. `TotalAssetsDisplay`スクリプトをアタッチ
-3. TextMeshProUGUIコンポーネントを設定
-4. 自動的にPersistentUIManagerに登録されます
+3. TextMeshProUGUIコンポーネントをTotalAssetsDisplayの`Display Text`にドラッグ
+4. 自動的にPersistentUIManagerに登録され、GameDatabaseと連携します
+5. 表示設定を調整（通貨記号、カンマ区切りなど）
+
+**重要:** MoneyDisplayとTotalAssetsDisplayは、GameDatabaseのイベント駆動で更新されます。
+- 所持金変更時: `OnMoneyChanged`イベント → MoneyDisplayとTotalAssetsDisplayが自動更新
+- アイテム/設備変更時: `OnAssetsChanged`イベント → TotalAssetsDisplayが自動更新
+- Facilityの自動生成時も含めて、すべての変更が即座に反映されます
 
 ## Facilityとの連携
 
