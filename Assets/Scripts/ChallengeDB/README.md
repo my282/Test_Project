@@ -33,8 +33,15 @@ Challenge Databaseシステムは、入力式問題を管理・実行するた�
 既存のItem/Facilityシステムと同じ**二層構造**を採用：
 
 ```
+┌───────────────────────────────────────┐
+│ ChallengeMasterDatabase (ScriptableObject) │  ← 全問題の管理
+│ - Resources/ChallengeMasterDatabase.asset  │
+│ - 200問を一元管理                          │
+│ - 統計機能、検索機能                       │
+└───────────────────────────────────────┘
+              ↓ 管理
 ┌─────────────────────────────────┐
-│  ChallengeData (ScriptableObject) │  ← マスターデータ（静的）
+│  ChallengeData (ScriptableObject) │  ← 個別問題のマスターデータ
 │  - 問題文、正解パターン          │
 │  - 報酬テーブル                 │
 │  - 難易度、種類                 │
@@ -54,14 +61,24 @@ Challenge Databaseシステムは、入力式問題を管理・実行するた�
 
 ### ファイル一覧
 
+#### コアシステム
+
 | ファイル名 | 役割 | 説明 |
 |-----------|------|------|
 | `ChallengeEnums.cs` | Enum定義 | 難易度、種類、状態などの列挙型 |
 | `RewardSystem.cs` | 報酬システム | 確率ベースの報酬抽選ロジック |
 | `ChallengeData.cs` | マスターデータ | ScriptableObject、問題の定義 |
 | `Challenge.cs` | ランタイムデータ | プレイヤーの進行状況を管理 |
+| `ChallengeMasterDatabase.cs` | **マスターDB** | **全問題データの一元管理** |
 | `ChallengeDatabaseHelper.cs` | ヘルパー | ユーティリティ関数集 |
 | `ChallengeDatabaseExample.cs` | デモ | 使用例とテストスクリプト |
+
+#### エディタ拡張
+
+| ファイル名 | 役割 | 説明 |
+|-----------|------|------|
+| `Editor/ChallengeDataEditor.cs` | カスタムInspector | 問題作成を効率化 |
+| `Editor/ChallengeMasterDatabaseEditor.cs` | カスタムInspector | MasterDBの統計表示 |
 
 ### Enum定義
 
@@ -112,6 +129,17 @@ public enum ChallengeStatus
 
 ## クイックスタート
 
+### 0. 初期セットアップ（最初の1回だけ）
+
+**ChallengeMasterDatabaseアセットを作成:**
+
+1. `Assets/Resources/` フォルダを開く（なければ作成）
+2. 右クリック → `Create > Game > Challenge Master Database`
+3. 名前を **`ChallengeMasterDatabase`** に変更（重要！）
+4. 完了！これで問題管理の準備完了
+
+> 💡 このアセットは**1つだけ**作成してください。全ての問題データがここに登録されます。
+
 ### 1. 問題データの作成
 
 1. Projectウィンドウで右クリック
@@ -145,7 +173,21 @@ Inspectorで以下を設定：
   - Drop Rate: 0.5
 ```
 
-### 3. テスト実行
+### 3. ChallengeMasterDatabaseに登録
+
+問題データを作成したら、MasterDatabaseに登録します：
+
+1. 作成した問題データを選択
+2. Inspector下部にある **「MasterDBに追加」** ボタンをクリック
+3. Console に「問題データを追加しました」と表示されればOK！
+
+### 4. 登録確認
+
+1. `Assets/Resources/ChallengeMasterDatabase` アセットを選択
+2. Inspectorで登録した問題が表示されます
+3. **「統計を表示」** ボタンで問題数を確認できます
+
+### 5. テスト実行（オプション）
 
 1. シーンに空のGameObjectを作成
 2. `ChallengeDatabaseExample` コンポーネントをアタッチ
@@ -288,11 +330,81 @@ int hardCompleted = ChallengeDatabaseHelper.GetCompletedChallengeCountByDifficul
 );
 ```
 
+### ChallengeMasterDatabaseの使い方
+
+#### シングルトンアクセス
+
+```csharp
+// どこからでもアクセス可能（GameObjectにアタッチ不要）
+ChallengeMasterDatabase masterDB = ChallengeMasterDatabase.Instance;
+```
+
+#### 問題データの取得
+
+```csharp
+// すべての問題を取得
+List<ChallengeData> allChallenges = ChallengeMasterDatabase.Instance.GetAllChallengeData();
+
+// IDで問題を検索
+ChallengeData challenge = ChallengeMasterDatabase.Instance.GetChallengeData("challenge_math_001");
+
+// 難易度別に取得
+List<ChallengeData> easyChallenges = ChallengeMasterDatabase.Instance.GetChallengeDataByDifficulty(
+    ChallengeDifficulty.Easy
+);
+
+// ランダムに問題を選択
+ChallengeData randomChallenge = ChallengeMasterDatabase.Instance.GetRandomChallengeByDifficulty(
+    ChallengeDifficulty.Normal
+);
+```
+
+#### 統計情報の取得
+
+```csharp
+// 総問題数
+int totalCount = ChallengeMasterDatabase.Instance.GetChallengeCount();
+Debug.Log($"登録済み問題数: {totalCount}");
+
+// 難易度別の問題数
+int normalCount = ChallengeMasterDatabase.Instance.GetChallengeCountByDifficulty(
+    ChallengeDifficulty.Normal
+);
+
+// 統計情報を表示
+string stats = ChallengeMasterDatabase.Instance.GetStatistics();
+Debug.Log(stats);
+```
+
+#### エディタ機能
+
+ChallengeMasterDatabaseアセットを選択すると、Inspector に以下が表示されます：
+
+- **統計を表示** ボタン - 全問題の統計をダイアログで表示
+- **クイック情報** - 難易度別・種類別の問題数を一目で確認
+- **すべて削除** ボタン - 全問題データをクリア（要確認）
+- **保存** ボタン - 変更を保存
+
+### カスタムInspectorの機能
+
+#### ChallengeDataEditor（問題作成用）
+
+問題データを選択すると、Inspector に以下のボタンが表示されます：
+
+1. **ID自動生成** - `challenge_[種類]_[難易度]_[連番]` 形式で自動生成
+2. **バリデーション** - データの妥当性をチェック
+3. **複製して新規作成** - 似た問題を作る際に便利
+4. **MasterDBに追加** - ChallengeMasterDatabaseに登録
+
+**折りたたみ可能なセクション:**
+- **問題プレビュー** - 問題文、正解、設定を見やすく表示
+- **報酬情報** - ドロップ率の合計と期待値を自動計算
+
 ---
 
-## MasterDatabase/GameDatabase統合
+## GameDatabase統合（将来の拡張用）
 
-現在、このシステムは**独立したモジュール**として実装されています。以下の手順で既存のDatabase系に統合できます。
+現在、ChallengeMasterDatabaseは独立して動作します。将来的にGameDatabaseと統合する場合は、以下を参考にしてください。
 
 ### MasterDatabaseへの統合
 
@@ -531,6 +643,27 @@ if (isCorrect)
 | `IncrementAttempt()` | `void` | 挑戦回数を増やす |
 | `RecordCompletion()` | `void` | クリア記録 |
 | `Unlock()` | `void` | 問題を解放 |
+
+### ChallengeMasterDatabase（ScriptableObject - シングルトン）
+
+| メンバー | 型 | 説明 |
+|---------|---|------|
+| `Instance` | `static ChallengeMasterDatabase` | シングルトンインスタンス（Resources.Load） |
+| `GetAllChallengeData()` | `List<ChallengeData>` | すべての問題データを取得 |
+| `GetChallengeData(string)` | `ChallengeData` | IDで問題データを取得 |
+| `GetChallengeDataByDifficulty()` | `List<ChallengeData>` | 難易度別に問題を取得 |
+| `GetRandomChallengeByDifficulty()` | `ChallengeData` | 難易度別ランダム選択 |
+| `AddChallengeData()` | `void` | 問題データを登録（エディタ用） |
+| `RemoveChallengeData()` | `bool` | 問題データを削除（エディタ用） |
+| `GetChallengeCount()` | `int` | 総問題数を取得 |
+| `GetChallengeCountByDifficulty()` | `int` | 難易度別の問題数を取得 |
+| `GetStatistics()` | `string` | 統計情報を文字列で取得 |
+
+**使用例:**
+```csharp
+// シングルトン経由でアクセス
+ChallengeMasterDatabase.Instance.GetRandomChallengeByDifficulty(ChallengeDifficulty.Normal);
+```
 
 ### ChallengeDatabaseHelper（静的）
 
