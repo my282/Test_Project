@@ -14,13 +14,14 @@ public class Item
     public Sprite icon;             // アイコン画像
     public ItemType type;           // アイテムタイプ
 
-    public Item(string id, string name, string desc, int qty, ItemType itemType)
+    public Item(string id, string name, string desc, int qty, ItemType itemType, Sprite itemIcon = null)
     {
         itemId = id;
         itemName = name;
         description = desc;
         quantity = qty;
         type = itemType;
+        icon = itemIcon;
     }
 }
 

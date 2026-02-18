@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 
 /// <summary>
 /// ゲーム全体のデータベース（シングルトン）
@@ -9,6 +11,12 @@ using UnityEngine;
 public class GameDatabase : MonoBehaviour
 {
     private static GameDatabase _instance;
+
+    // イベントシステム
+    /// <summary>
+    /// アイテムが変更された時に呼ばれるイベント
+    /// </summary>
+    public event Action OnItemsChanged;
 
     /// <summary>
     /// シングルトンインスタンス
@@ -114,7 +122,7 @@ public class GameDatabase : MonoBehaviour
     /// <summary>
     /// アイテムを追加
     /// </summary>
-    public void AddItem(string itemId, string itemName, string description, int quantity, ItemType type)
+    public void AddItem(string itemId, string itemName, string description, int quantity, ItemType type, Sprite icon = null)
     {
         Item existingItem = items.Find(i => i.itemId == itemId);
         if (existingItem != null)
@@ -124,10 +132,13 @@ public class GameDatabase : MonoBehaviour
         }
         else
         {
-            Item newItem = new Item(itemId, itemName, description, quantity, type);
+            Item newItem = new Item(itemId, itemName, description, quantity, type, icon);
             items.Add(newItem);
             Debug.Log($"新しいアイテム「{itemName}」を{quantity}個取得しました。");
         }
+        
+        // アイテム変更イベントを発火
+        OnItemsChanged?.Invoke();
     }
 
     /// <summary>
@@ -146,6 +157,9 @@ public class GameDatabase : MonoBehaviour
                 items.Remove(item);
                 Debug.Log($"{item.itemName}がなくなりました。");
             }
+            
+            // アイテム変更イベントを発火
+            OnItemsChanged?.Invoke();
             return true;
         }
         else
