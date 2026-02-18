@@ -116,21 +116,27 @@ public class HubInventoryUIManager : MonoBehaviour
         // 既存のスロットをクリア
         ClearInventory();
         
-        // GameDatabaseからアイテムを取得
-        List<Item> items;
-        if (enableTypeFilter)
-        {
-            items = GameDatabase.Instance.GetItemsByType(filterType);
-        }
-        else
-        {
-            items = GameDatabase.Instance.GetAllItems();
-        }
+        // MasterDatabaseから全アイテムデータを取得（登録順）
+        List<ItemData> allItemData = MasterDatabase.Instance.GetAllItemData();
         
-        // アイテムごとにスロットを作成
-        foreach (Item item in items)
+        // MasterDatabaseの順序でGameDatabaseのアイテムを表示
+        foreach (ItemData itemData in allItemData)
         {
-            CreateItemSlot(item);
+            // GameDatabaseに該当するアイテムが存在するかチェック
+            Item item = GameDatabase.Instance.GetItem(itemData.itemId);
+            
+            // アイテムが存在し、数量が1以上の場合のみ表示
+            if (item != null && item.quantity > 0)
+            {
+                // フィルター適用
+                if (enableTypeFilter && item.type != filterType)
+                {
+                    continue;
+                }
+                
+                // スロットを作成
+                CreateItemSlot(item);
+            }
         }
     }
     
