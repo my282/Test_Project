@@ -240,15 +240,6 @@ public class ChallengeDataEditor : Editor
             EditorGUILayout.LabelField("正解パターン:", "未設定", EditorStyles.boldLabel);
         }
         
-        if (challengeData.answerType == AnswerType.Text)
-        {
-            EditorGUILayout.LabelField("大小文字区別:", challengeData.caseSensitive ? "する" : "しない");
-        }
-        else if (challengeData.answerType == AnswerType.Number)
-        {
-            EditorGUILayout.LabelField("許容誤差:", challengeData.numericTolerance.ToString());
-        }
-        
         // ヒント
         if (!string.IsNullOrEmpty(challengeData.hint))
         {
@@ -268,18 +259,6 @@ public class ChallengeDataEditor : Editor
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         
         RewardTable rewardTable = challengeData.rewardTable;
-        
-        // お金の報酬
-        if (rewardTable.guaranteedMoney > 0)
-        {
-            EditorGUILayout.LabelField("確定報酬（お金）:", $"{rewardTable.guaranteedMoney}円", EditorStyles.boldLabel);
-        }
-        else
-        {
-            EditorGUILayout.LabelField("確定報酬（お金）:", "なし");
-        }
-        
-        EditorGUILayout.Space(5);
         
         // アイテム報酬
         if (rewardTable.rewardItems != null && rewardTable.rewardItems.Count > 0)
@@ -341,7 +320,7 @@ public class ChallengeDataEditor : Editor
     {
         switch (difficulty)
         {
-            case ChallengeDifficulty.VeryEasy:
+            case ChallengeDifficulty.Beginner:
                 return "⭐";
             case ChallengeDifficulty.Easy:
                 return "⭐⭐";
@@ -349,7 +328,7 @@ public class ChallengeDataEditor : Editor
                 return "⭐⭐⭐";
             case ChallengeDifficulty.Hard:
                 return "⭐⭐⭐⭐";
-            case ChallengeDifficulty.VeryHard:
+            case ChallengeDifficulty.Expert:
                 return "⭐⭐⭐⭐⭐";
             default:
                 return "";

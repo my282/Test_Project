@@ -1,0 +1,11 @@
+challengeId,challengeName,description,difficulty,type,questionText,answerType,correctAnswers,hint,rewardItems
+challenge_math_easy_001,簡単な足し算,基本的な足し算問題です,Easy,Math,1 + 1 は?,Number,2,指を使って数えてみよう,"[{""itemId"":""gold_coin"",""minQuantity"":5,""maxQuantity"":10,""dropRate"":0.8}]"
+challenge_math_normal_001,掛け算,掛け算の問題です,Normal,Math,7 × 8 は?,Number,56,九九を思い出そう,"[{""itemId"":""gold_coin"",""minQuantity"":20,""maxQuantity"":30,""dropRate"":0.7},{""itemId"":""silver_coin"",""minQuantity"":10,""maxQuantity"":15,""dropRate"":0.5}]"
+challenge_logic_easy_001,簡単な論理問題,論理的思考の問題です,Easy,Logic,"次の数字は？ 2,4,6,8,?",Number,10,2ずつ増えているよ,"[{""itemId"":""wisdom_gem"",""minQuantity"":1,""maxQuantity"":1,""dropRate"":0.3}]"
+challenge_quiz_beginner_001,首都クイズ,日本の地理問題,Beginner,Quiz,日本の首都は？,Text,東京|とうきょう|Tokyo,日本で一番大きな都市,"[{""itemId"":""knowledge_point"",""minQuantity"":10,""maxQuantity"":20,""dropRate"":0.9}]"
+challenge_math_hard_001,二次方程式,数学の応用問題,Hard,Math,x² - 5x + 6 = 0 の解の一つは？,Number,2|3,因数分解してみよう,"[{""itemId"":""rare_gem"",""minQuantity"":1,""maxQuantity"":2,""dropRate"":0.2},{""itemId"":""gold_coin"",""minQuantity"":50,""maxQuantity"":100,""dropRate"":0.8}]"
+challenge_logic_normal_001,パターン認識,パターンを見つける問題,Normal,Logic,〇△〇△〇？ 次に来る図形は？,Text,△|三角|さんかく,繰り返しパターンに注目,"[{""itemId"":""pattern_token"",""minQuantity"":5,""maxQuantity"":10,""dropRate"":0.6}]"
+challenge_memory_easy_001,記憶問題,簡単な記憶力テスト,Easy,Memory,次の数字を覚えて答えよ: 3-7-2-9,Text,3729|3-7-2-9,4つの数字を順番に,"[{""itemId"":""memory_crystal"",""minQuantity"":1,""maxQuantity"":3,""dropRate"":0.5}]"
+challenge_quiz_normal_001,歴史クイズ,日本史の問題,Normal,Quiz,江戸幕府を開いたのは誰？,Text,徳川家康|とくがわいえやす|家康|いえやす,関ヶ原の戦いの後,"[{""itemId"":""history_scroll"",""minQuantity"":1,""maxQuantity"":1,""dropRate"":0.4},{""itemId"":""knowledge_point"",""minQuantity"":30,""maxQuantity"":50,""dropRate"":0.8}]"
+challenge_math_expert_001,高度な数学,大学レベルの数学問題,Expert,Math,e^(iπ) + 1 = ?,Number,0,オイラーの等式,"[{""itemId"":""legendary_gem"",""minQuantity"":1,""maxQuantity"":1,""dropRate"":0.05},{""itemId"":""rare_gem"",""minQuantity"":3,""maxQuantity"":5,""dropRate"":0.3},{""itemId"":""gold_coin"",""minQuantity"":100,""maxQuantity"":200,""dropRate"":1.0}]"
+challenge_other_easy_001,その他,分類しにくい問題,Easy,Other,1週間は何日？,Number,7,月曜から日曜まで数えよう,"[{""itemId"":""common_token"",""minQuantity"":10,""maxQuantity"":20,""dropRate"":0.9}]"

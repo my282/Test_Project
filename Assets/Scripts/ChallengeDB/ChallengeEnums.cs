@@ -5,11 +5,11 @@ using System;
 /// </summary>
 public enum ChallengeDifficulty
 {
-    VeryEasy,   // 非常に簡単
+    Beginner,   // 初心者
     Easy,       // 簡単
     Normal,     // 普通
     Hard,       // 難しい
-    VeryHard    // 非常に難しい
+    Expert      // 上級者
 }
 
 /// <summary>

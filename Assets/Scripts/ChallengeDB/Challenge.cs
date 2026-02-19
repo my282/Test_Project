@@ -12,19 +12,15 @@ public class Challenge
     public string challengeId;
     public string challengeName;
     public string description;
-    public Sprite icon;
     public ChallengeDifficulty difficulty;
     public ChallengeType type;
     
     [Header("問題内容")]
     public string questionText;
-    public Sprite questionImage;
     
     [Header("回答設定")]
     public AnswerType answerType;
     public string[] correctAnswers;
-    public bool caseSensitive;
-    public float numericTolerance;
     public string hint;
     
     [Header("プレイヤーの進行状態")]
@@ -40,30 +36,22 @@ public class Challenge
         string id,
         string name,
         string desc,
-        Sprite iconSprite,
         ChallengeDifficulty diff,
         ChallengeType challengeType,
         string question,
-        Sprite questionImg,
         AnswerType ansType,
         string[] answers,
-        bool caseSens,
-        float numTolerance,
         string hintText
     )
     {
         challengeId = id;
         challengeName = name;
         description = desc;
-        icon = iconSprite;
         difficulty = diff;
         type = challengeType;
         questionText = question;
-        questionImage = questionImg;
         answerType = ansType;
         correctAnswers = answers;
-        caseSensitive = caseSens;
-        numericTolerance = numTolerance;
         hint = hintText;
         
         // 初期状態
@@ -100,7 +88,7 @@ public class Challenge
     }
     
     /// <summary>
-    /// 数値回答のチェック
+    /// 数値回答のチェック（完全一致）
     /// </summary>
     private bool CheckNumericAnswer(string userAnswer)
     {
@@ -110,13 +98,12 @@ public class Challenge
             return false;
         }
         
-        // すべての正解パターンと比較
+        // すべての正解パターンと比較（完全一致）
         foreach (var correctAnswer in correctAnswers)
         {
             if (float.TryParse(correctAnswer, out float correctValue))
             {
-                // 許容誤差内かチェック
-                if (Mathf.Abs(userValue - correctValue) <= numericTolerance)
+                if (Mathf.Approximately(userValue, correctValue))
                 {
                     return true;
                 }
@@ -127,19 +114,14 @@ public class Challenge
     }
     
     /// <summary>
-    /// テキスト回答のチェック
+    /// テキスト回答のチェック（大小文字区別なし）
     /// </summary>
     private bool CheckTextAnswer(string userAnswer)
     {
-        // すべての正解パターンと比較
+        // すべての正解パターンと比較（大小文字区別なし）
         foreach (var correctAnswer in correctAnswers)
         {
-            // 大文字小文字の区別設定に応じて比較
-            StringComparison comparison = caseSensitive 
-                ? StringComparison.Ordinal 
-                : StringComparison.OrdinalIgnoreCase;
-            
-            if (userAnswer.Trim().Equals(correctAnswer.Trim(), comparison))
+            if (userAnswer.Trim().Equals(correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
