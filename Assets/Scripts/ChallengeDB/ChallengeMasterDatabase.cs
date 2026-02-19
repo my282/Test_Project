@@ -40,7 +40,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public List<ChallengeData> GetAllChallengeData()
     {
-        return new List<ChallengeData>(allChallenges);
+        return allChallenges.Where(c => c != null).ToList();
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public ChallengeData GetChallengeData(string challengeId)
     {
-        return allChallenges.Find(challenge => challenge.challengeId == challengeId);
+        return allChallenges.Find(challenge => challenge != null && challenge.challengeId == challengeId);
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public List<ChallengeData> GetChallengeDataByType(ChallengeType type)
     {
-        return allChallenges.Where(c => c.type == type).ToList();
+        return allChallenges.Where(c => c != null && c.type == type).ToList();
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public List<ChallengeData> GetChallengeDataByDifficulty(ChallengeDifficulty difficulty)
     {
-        return allChallenges.Where(c => c.difficulty == difficulty).ToList();
+        return allChallenges.Where(c => c != null && c.difficulty == difficulty).ToList();
     }
 
     /// <summary>
@@ -80,6 +80,12 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public void AddChallengeData(ChallengeData challengeData)
     {
+        if (challengeData == null)
+        {
+            Debug.LogWarning("null の問題データは追加できません。");
+            return;
+        }
+        
         if (!allChallenges.Contains(challengeData))
         {
             allChallenges.Add(challengeData);
@@ -130,7 +136,27 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public int GetChallengeCount()
     {
-        return allChallenges.Count;
+        return allChallenges.Count(c => c != null);
+    }
+
+    /// <summary>
+    /// リストからnull要素を削除（エディタ専用）
+    /// </summary>
+    public int CleanupNullEntries()
+    {
+        int beforeCount = allChallenges.Count;
+        allChallenges.RemoveAll(c => c == null);
+        int removedCount = beforeCount - allChallenges.Count;
+        
+        if (removedCount > 0)
+        {
+            Debug.LogWarning($"ChallengeMasterDatabase: {removedCount}個のnull要素を削除しました。");
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+#endif
+        }
+        
+        return removedCount;
     }
 
     /// <summary>
@@ -138,7 +164,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public int GetChallengeCountByDifficulty(ChallengeDifficulty difficulty)
     {
-        return allChallenges.Count(c => c.difficulty == difficulty);
+        return allChallenges.Count(c => c != null && c.difficulty == difficulty);
     }
 
     /// <summary>
@@ -146,7 +172,7 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public int GetChallengeCountByType(ChallengeType type)
     {
-        return allChallenges.Count(c => c.type == type);
+        return allChallenges.Count(c => c != null && c.type == type);
     }
 
     /// <summary>
@@ -154,13 +180,15 @@ public class ChallengeMasterDatabase : ScriptableObject
     /// </summary>
     public string GetStatistics()
     {
-        if (allChallenges.Count == 0)
+        int totalCount = GetChallengeCount();
+        
+        if (totalCount == 0)
         {
             return "問題データがありません。";
         }
 
         string stats = $"=== Challenge Master Database 統計 ===\n";
-        stats += $"総問題数: {allChallenges.Count}\n\n";
+        stats += $"総問題数: {totalCount}\n\n";
 
         stats += "【難易度別】\n";
         foreach (ChallengeDifficulty diff in System.Enum.GetValues(typeof(ChallengeDifficulty)))
