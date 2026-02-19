@@ -258,7 +258,8 @@ public class FacilityProductionController : MonoBehaviour
                             itemData.itemName, 
                             itemData.description, 
                             quantity, 
-                            itemData.type
+                            itemData.type,
+                            itemData.icon
                         );
                     }
                     else
