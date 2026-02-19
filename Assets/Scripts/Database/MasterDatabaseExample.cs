@@ -50,7 +50,8 @@ public class MasterDatabaseExample : MonoBehaviour
                 item1Data.itemName,
                 item1Data.description,
                 1,
-                item1Data.type
+                item1Data.type,
+                item1Data.icon
             );
         }
 
@@ -71,7 +72,8 @@ public class MasterDatabaseExample : MonoBehaviour
                     itemData.itemName,
                     itemData.description,
                     1,
-                    itemData.type
+                    itemData.type,
+                    itemData.icon
                 );
                 Debug.Log($"{itemData.itemName}を購入しました！");
             }
