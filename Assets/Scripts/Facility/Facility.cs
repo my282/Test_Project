@@ -122,6 +122,31 @@ public class Facility
     {
         productionState.Reset();
     }
+
+    /// <summary>
+    /// レベルに基づく生成量の倍率を取得
+    /// Lv1 = 1.0倍、Lv2以降は設定に応じて増加
+    /// </summary>
+    public float GetProductionMultiplier()
+    {
+        // MasterDatabaseから設備データを取得
+        if (MasterDatabase.Instance != null)
+        {
+            FacilityData data = MasterDatabase.Instance.GetFacilityData(facilityId);
+            if (data != null)
+            {
+                // 計算式: 1.0 + (レベル - 1) × レベルごとの増加倍率
+                // 例: incrementPerLevel = 1.0 の場合
+                //   Lv1: 1.0, Lv2: 2.0, Lv3: 3.0
+                // 例: incrementPerLevel = 0.5 の場合
+                //   Lv1: 1.0, Lv2: 1.5, Lv3: 2.0
+                return 1.0f + data.productionAmountIncreasePerLevel * (level - 1);
+            }
+        }
+        
+        // デフォルトは1.0倍（変化なし）
+        return 1.0f;
+    }
 }
 
 /// <summary>

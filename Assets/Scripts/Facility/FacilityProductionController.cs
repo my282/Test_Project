@@ -219,7 +219,9 @@ public class FacilityProductionController : MonoBehaviour
         // お金の生成
         if (facility.productionConfig.ProducesMoney())
         {
-            moneyProduced = facility.productionConfig.moneyAmount;
+            // レベルに基づく倍率を適用
+            float multiplier = facility.GetProductionMultiplier();
+            moneyProduced = Mathf.RoundToInt(facility.productionConfig.moneyAmount * multiplier);
             
             // GameDatabaseにお金を追加
             if (GameDatabase.Instance != null)
@@ -233,17 +235,20 @@ public class FacilityProductionController : MonoBehaviour
             
             if (showDebugLog)
             {
-                Debug.Log($"[{facility.facilityName}] お金を生成: {moneyProduced}");
+                Debug.Log($"[{facility.facilityName}] お金を生成: {moneyProduced} (Lv{facility.level}, x{multiplier:F1})");
             }
         }
 
         // アイテムの生成
         if (facility.productionConfig.ProducesItems())
         {
+            // レベルに基づく倍率を適用
+            float multiplier = facility.GetProductionMultiplier();
+            
             foreach (var itemProd in facility.productionConfig.itemProductions)
             {
                 string itemId = itemProd.GetItemId();
-                int quantity = itemProd.quantity;
+                int quantity = Mathf.RoundToInt(itemProd.quantity * multiplier);
 
                 // GameDatabaseにアイテムを追加
                 if (GameDatabase.Instance != null)
@@ -276,7 +281,7 @@ public class FacilityProductionController : MonoBehaviour
 
                 if (showDebugLog)
                 {
-                    Debug.Log($"[{facility.facilityName}] アイテムを生成: {itemId} x{quantity}");
+                    Debug.Log($"[{facility.facilityName}] アイテムを生成: {itemId} x{quantity} (Lv{facility.level}, x{multiplier:F1})");
                 }
             }
         }

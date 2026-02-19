@@ -30,6 +30,10 @@ public class FacilityData : ScriptableObject
     [Tooltip("この設備の自動生成設定")]
     public ProductionConfig productionConfig = new ProductionConfig();
 
+    [Header("レベルによる生成量増加")]
+    [Tooltip("レベルが1上がるごとの生成量増加倍率（例: 1.0ならLv1=1倍, Lv2=2倍, Lv3=3倍）")]
+    public float productionAmountIncreasePerLevel = 1.0f;
+
     /// <summary>
     /// Facilityインスタンスを生成
     /// </summary>
