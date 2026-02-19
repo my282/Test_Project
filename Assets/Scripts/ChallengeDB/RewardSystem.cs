@@ -47,11 +47,6 @@ public class RewardItem
 [Serializable]
 public class RewardTable
 {
-    [Header("お金の報酬")]
-    [Tooltip("確定で獲得できるお金")]
-    [Min(0)]
-    public int guaranteedMoney = 0;
-    
     [Header("アイテム報酬")]
     [Tooltip("確率でドロップするアイテムのリスト")]
     public List<RewardItem> rewardItems = new List<RewardItem>();

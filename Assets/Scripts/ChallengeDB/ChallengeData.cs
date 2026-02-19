@@ -19,9 +19,6 @@ public class ChallengeData : ScriptableObject
     [Tooltip("問題の説明")]
     public string description;
     
-    [Tooltip("問題のアイコン画像")]
-    public Sprite icon;
-    
     [Header("難易度・種類")]
     [Tooltip("問題の難易度（5段階）")]
     public ChallengeDifficulty difficulty = ChallengeDifficulty.Normal;
@@ -34,22 +31,12 @@ public class ChallengeData : ScriptableObject
     [Tooltip("問題文")]
     public string questionText;
     
-    [Tooltip("問題の画像（オプション）")]
-    public Sprite questionImage;
-    
     [Header("回答設定")]
     [Tooltip("回答の入力タイプ")]
     public AnswerType answerType = AnswerType.Text;
     
     [Tooltip("正解パターン（複数設定可能）")]
     public string[] correctAnswers = new string[1];
-    
-    [Tooltip("大文字小文字を区別するか（Text入力の場合）")]
-    public bool caseSensitive = false;
-    
-    [Tooltip("数値の許容誤差（Number入力の場合、0で完全一致）")]
-    [Min(0f)]
-    public float numericTolerance = 0f;
     
     [Header("ヒント")]
     [TextArea(2, 4)]
@@ -70,15 +57,11 @@ public class ChallengeData : ScriptableObject
             challengeId,
             challengeName,
             description,
-            icon,
             difficulty,
             type,
             questionText,
-            questionImage,
             answerType,
             correctAnswers,
-            caseSensitive,
-            numericTolerance,
             hint
         );
     }

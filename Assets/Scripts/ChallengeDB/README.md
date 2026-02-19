@@ -8,8 +8,10 @@
 - [システム構成](#システム構成)
 - [クイックスタート](#クイックスタート)
 - [詳細ガイド](#詳細ガイド)
-- [MasterDatabase/GameDatabase統合](#masterdatabasegamedatabase統合)
-- [トラブルシューティング](#トラブルシューティング)
+- [CSV一括インポート](#csv一括インポート)
+- [GameDatabase統合（将来の拡張用）](#gamedatabase統合将来の拡張用)
+- [API リファレンス](#api-リファレンス)
+- [更新履歴](#更新履歴)
 
 ---
 
@@ -20,7 +22,7 @@ Challenge Databaseシステムは、入力式問題を管理・実行するた�
 ### 主な機能
 
 ✅ **入力式問題対応** - ユーザーがテキストや数値を入力して回答  
-✅ **5段階難易度** - VeryEasy～VeryHardの難易度設定  
+✅ **5段階難易度** - Beginner～Expertの難易度設定  
 ✅ **ランダム出題** - 難易度別にランダムで問題を選択  
 ✅ **確率報酬システム** - ガチャ形式の報酬抽選  
 ✅ **複数正解パターン** - 1つの問題に複数の正解を設定可能  
@@ -79,6 +81,9 @@ Challenge Databaseシステムは、入力式問題を管理・実行するた�
 |-----------|------|------|
 | `Editor/ChallengeDataEditor.cs` | カスタムInspector | 問題作成を効率化 |
 | `Editor/ChallengeMasterDatabaseEditor.cs` | カスタムInspector | MasterDBの統計表示 |
+| `Editor/CSVSimpleParser.cs` | CSVパーサー | RFC 4180準拠のCSV解析 |
+| `Editor/ChallengeCSVParser.cs` | CSV変換 | CSV行をChallengeDataに変換 |
+| `Editor/ChallengeCSVImporter.cs` | EditorWindow | CSV一括インポートUI |
 
 ### Enum定義
 
@@ -86,11 +91,11 @@ Challenge Databaseシステムは、入力式問題を管理・実行するた�
 ```csharp
 public enum ChallengeDifficulty
 {
-    VeryEasy,   // 非常に簡単
+    Beginner,   // 初心者
     Easy,       // 簡単
     Normal,     // 普通
     Hard,       // 難しい
-    VeryHard    // 非常に難しい
+    Expert      // 上級者
 }
 ```
 
@@ -402,6 +407,196 @@ ChallengeMasterDatabaseアセットを選択すると、Inspector に以下が�
 
 ---
 
+## CSV一括インポート
+
+大量の問題データ（200問など）を効率的に作成するためのCSVインポート機能を提供しています
+
+### CSVファイルの準備
+
+#### CSV形式仕様
+
+**列定義（10列）:**
+```csv
+challengeId,challengeName,description,difficulty,type,questionText,answerType,correctAnswers,hint,rewardItems
+```
+
+#### 特殊フィールドの記法
+
+| フィールド | 形式 | 例 |
+|----------|------|-----|
+| `correctAnswers` | パイプ区切り | `42\|42.0\|四十二` |
+| `rewardItems` | **JSON配列** | `[{"itemId":"gold","minQuantity":10,"maxQuantity":20,"dropRate":0.8}]` |
+| `difficulty` | Enum文字列 | `Beginner`, `Easy`, `Normal`, `Hard`, `Expert` |
+| `type` | Enum文字列 | `Math`, `Logic`, `Memory`, `Quiz`, `Other` |
+| `answerType` | Enum文字列 | `Number`, `Text` |
+
+#### RewardItems（JSON配列）の記法
+
+空の場合:
+```csv
+[]
+```
+
+1つの報酬:
+```csv
+"[{""itemId"":""gold_coin"",""minQuantity"":10,""maxQuantity"":20,""dropRate"":0.8}]"
+```
+
+複数の報酬:
+```csv
+"[{""itemId"":""gold_coin"",""minQuantity"":10,""maxQuantity"":20,""dropRate"":0.8},{""itemId"":""rare_gem"",""minQuantity"":1,""maxQuantity"":1,""dropRate"":0.1}]"
+```
+
+**注意点:**
+- CSV内のJSON文字列全体をダブルクォート `"` で囲む
+- JSON内部のダブルクォートは `""` にエスケープ（2つ重ねる）
+- ExcelでCSVを編集する場合、自動的にエスケープされます
+
+#### サンプルCSV
+
+[Assets/Editor/CSV/challenge_sample.csv](../../../Editor/CSV/challenge_sample.csv) に10問分のサンプルがあります。参考にしてください。
+
+**サンプル行（見やすく整形）:**
+```csv
+challengeId: challenge_math_easy_001
+challengeName: 簡単な足し算
+description: 基本的な足し算問題です
+difficulty: Easy
+type: Math
+questionText: 1 + 1 は?
+answerType: Number
+correctAnswers: 2
+hint: 指を使って数えてみよう
+rewardItems: "[{""itemId"":""gold_coin"",""minQuantity"":5,""maxQuantity"":10,""dropRate"":0.8}]"
+```
+
+### インポート手順
+
+#### 1. CSVファイルをプロジェクトに配置
+
+1. CSVファイルを作成（Excelや任意のテキストエディタで）
+2. `Assets/Editor/CSV/` フォルダに配置（フォルダがなければ作成）
+3. Unity エディタで認識されるまで待つ
+
+#### 2. CSV Importerを開く
+
+1. Unity メニューバーから `Tools > Challenge DB > CSV Importer` を選択
+2. CSV Importer ウィンドウが開きます
+
+#### 3. CSVファイルを選択
+
+1. **CSVファイル** 欄に、作成したTextAssetをドラッグ&ドロップ
+   - または、◎ボタンをクリックして `challenge_sample.csv` などを選択
+2. **出力先** はデフォルトの `Assets/GameData/Challenges/` のままでOK
+
+#### 4. インポート実行
+
+1. **「インポート実行」** ボタンをクリック
+2. プログレスバーが表示されます（キャンセル可能）
+3. 完了ダイアログが表示されたら成功です
+
+```
+インポート完了
+成功: 10件 / 10件
+所要時間: 2.35秒
+
+[OK]
+```
+
+#### 5. 確認
+
+1. `Assets/GameData/Challenges/` フォルダを確認
+   - `Math/Easy/challenge_math_easy_001.asset` のように階層化されて保存
+2. `Assets/Resources/ChallengeMasterDatabase` を選択
+   - Inspectorで「統計を表示」ボタンをクリック
+   - インポートした問題数が反映されているか確認
+
+### エラーハンドリング
+
+#### エラー時の動作
+
+**即座に中断方式**を採用しています：
+- エラーが発生した行で即座にインポート停止
+- 詳細なエラーメッセージをダイアログ表示
+- エラー修正後、再度インポート実行
+
+#### 典型的なエラーと対処法
+
+**1. CSV構文エラー**
+```
+CSV構文エラー
+Line 5: Column count mismatch. Expected 15, got 14
+```
+→ **対処**: 該当行の列数を確認。カンマの数、ダブルクォートの閉じ忘れをチェック
+
+**2. 必須項目欠如**
+```
+Row 3: challenge_math_003
+
+エラー内容:
+- questionTextが空です
+- correctAnswersが空です
+```
+→ **対処**: 必須項目（challengeId, challengeName, questionText, correctAnswers）を入力
+
+**3. Enum値不正**
+```
+Row 7: challenge_quiz_001
+
+エラー内容:
+- 不正なdifficulty値: Mediam
+```
+→ **対処**: Enum値のスペルミスを修正（`Mediam` → `Medium` ※ただし正しくは `Normal`）
+
+**4. JSON解析エラー**
+```
+Row 10: challenge_logic_001
+
+エラー内容:
+- rewardItemsのJSON解析エラー: Invalid JSON
+```
+→ **対処**: JSON構文を確認。ダブルクォートのエスケープ（`""`）、カンマ、括弧の対応をチェック
+
+#### デバッグのコツ
+
+1. **小規模テスト**: まずサンプルCSVでインポート成功を確認
+2. **段階的追加**: 10問ずつなど、小分けにしてインポート
+3. **Excel活用**: Excelで編集すると、ダブルクォートのエスケープが自動化されて便利
+4. **バックアップ**: 大量インポート前にプロジェクトをバックアップ
+
+### パフォーマンス
+
+| 問題数 | 所要時間（目安） | メモリ |
+|-------|---------------|--------|
+| 10問 | 1-3秒 | 低 |
+| 50問 | 5-10秒 | 低 |
+| 100問 | 10-20秒 | 中 |
+| 200問 | 20-40秒 | 中 |
+| 500問 | 50-100秒 | 高 |
+
+**最適化ポイント:**
+- 100問ごとに自動保存（`AssetDatabase.SaveAssets()`）
+- プログレスバーでキャンセル可能
+
+### よくある質問
+
+**Q: 既存の問題データを上書きしたくない**  
+A: 同じ `challengeId` のアセットが存在する場合、確認ダイアログが表示されます。「キャンセル」を選択すればインポート中断されます。
+
+**Q: CSVファイルの文字コードは？**  
+A: UTF-8推奨。BOM付きUTF-8も自動認識されます。Shift_JISなどは文字化けの可能性があります。
+
+**Q: rewardItemsを空にしたい**  
+A: `[]` または空文字列を指定してください。
+
+**Q: correctAnswersに改行を含めたい**  
+A: CSVの制約上、改行は扱えません。代替案として `\n` を含む文字列を設定し、ゲーム側で置換してください。
+
+**Q: 大量の問題を一度にインポートしても大丈夫？**  
+A: 500問程度までは問題ありませんが、エラー発生時のデバッグを考慮し、100問ずつなど分割インポートを推奨します。
+
+---
+
 ## GameDatabase統合（将来の拡張用）
 
 現在、ChallengeMasterDatabaseは独立して動作します。将来的にGameDatabaseと統合する場合は、以下を参考にしてください。
@@ -678,6 +873,17 @@ ChallengeMasterDatabase.Instance.GetRandomChallengeByDifficulty(ChallengeDifficu
 ---
 
 ## 更新履歴
+
+### v1.1.0 (2026/02/19)
+- **CSV一括インポート機能追加**
+  - CSVSimpleParser: RFC 4180準拠のCSVパーサー
+  - ChallengeCSVParser: CSV行からChallengeData生成
+  - ChallengeCSVImporter: EditorWindowによる一括インポートUI
+  - JSON形式でのRewardItems記述対応
+  - エラー時即座中断方式の採用
+  - サンプルCSVファイル（10問）を添付
+  - 詳細なエラーハンドリングとデバッグ機能
+- README更新: CSV形式仕様、インポート手順、トラブルシューティングを追加
 
 ### v1.0.0 (2026/02/15)
 - 初回リリース

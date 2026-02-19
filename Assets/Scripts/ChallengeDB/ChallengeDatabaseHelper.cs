@@ -103,13 +103,6 @@ public static class ChallengeDatabaseHelper
             return;
         }
         
-        // お金の報酬
-        if (rewardTable.guaranteedMoney > 0)
-        {
-            onMoneyReward?.Invoke(rewardTable.guaranteedMoney);
-            Debug.Log($"お金を {rewardTable.guaranteedMoney} 獲得しました！");
-        }
-        
         // アイテムの報酬抽選
         var rewards = rewardTable.GetRandomRewards();
         foreach (var (itemId, quantity) in rewards)
@@ -118,7 +111,7 @@ public static class ChallengeDatabaseHelper
             Debug.Log($"アイテム「{itemId}」を {quantity}個 獲得しました！");
         }
         
-        if (rewards.Count == 0 && rewardTable.guaranteedMoney == 0)
+        if (rewards.Count == 0)
         {
             Debug.Log("今回は報酬がありませんでした。");
         }
