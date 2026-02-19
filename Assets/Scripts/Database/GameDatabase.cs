@@ -48,6 +48,10 @@ public class GameDatabase : MonoBehaviour
     [Header("設備データ")]
     [SerializeField] private List<Facility> facilities = new List<Facility>();  // 設備リスト
 
+    // イベント
+    public event System.Action OnMoneyChanged;     // 所持金が変更された時
+    public event System.Action OnAssetsChanged;    // 総資産が変更された時（アイテム or 設備 or 所持金）
+
     private void Awake()
     {
         // シングルトンの設定
@@ -79,6 +83,8 @@ public class GameDatabase : MonoBehaviour
     {
         playerMoney += amount;
         Debug.Log($"所持金を{amount}追加しました。現在の所持金: {playerMoney}");
+        OnMoneyChanged?.Invoke();
+        OnAssetsChanged?.Invoke();
     }
 
     /// <summary>
@@ -90,6 +96,8 @@ public class GameDatabase : MonoBehaviour
         {
             playerMoney -= amount;
             Debug.Log($"所持金を{amount}使用しました。残りの所持金: {playerMoney}");
+            OnMoneyChanged?.Invoke();
+            OnAssetsChanged?.Invoke();
             return true;
         }
         else
@@ -105,6 +113,8 @@ public class GameDatabase : MonoBehaviour
     public void SetMoney(int amount)
     {
         playerMoney = amount;
+        OnMoneyChanged?.Invoke();
+        OnAssetsChanged?.Invoke();
     }
 
     #endregion
@@ -136,6 +146,7 @@ public class GameDatabase : MonoBehaviour
             items.Add(newItem);
             Debug.Log($"新しいアイテム「{itemName}」を{quantity}個取得しました。");
         }
+        OnAssetsChanged?.Invoke();
         
         // アイテム変更イベントを発火
         OnItemsChanged?.Invoke();
@@ -157,6 +168,7 @@ public class GameDatabase : MonoBehaviour
                 items.Remove(item);
                 Debug.Log($"{item.itemName}がなくなりました。");
             }
+            OnAssetsChanged?.Invoke();
             
             // アイテム変更イベントを発火
             OnItemsChanged?.Invoke();
@@ -299,6 +311,7 @@ public class GameDatabase : MonoBehaviour
         }
 
         Debug.Log($"設備「{facilityData.facilityName}」を解放しました！");
+        OnAssetsChanged?.Invoke();
         return true;
     }
 
@@ -396,6 +409,7 @@ public class GameDatabase : MonoBehaviour
         // レベルアップ
         facility.level++;
         Debug.Log($"設備「{facilityData.facilityName}」をレベル{facility.level}にアップグレードしました！");
+        OnAssetsChanged?.Invoke();
         return true;
     }
 
@@ -459,6 +473,100 @@ public class GameDatabase : MonoBehaviour
     public List<Facility> GetFacilitiesByType(FacilityType type)
     {
         return facilities.Where(f => f.type == type).ToList();
+    }
+
+    #endregion
+
+    #region 総資産計算
+
+    /// <summary>
+    /// 所持アイテムの総価値を計算
+    /// </summary>
+    private int GetItemsValue()
+    {
+        int totalValue = 0;
+        foreach (var item in items)
+        {
+            ItemData itemData = MasterDatabase.Instance.GetItemData(item.itemId);
+            if (itemData != null)
+            {
+                totalValue += itemData.basePrice * item.quantity;
+            }
+        }
+        return totalValue;
+    }
+
+    /// <summary>
+    /// 特定の設備の価値を計算（解放コスト + アップグレードコスト × (レベル - 1)）
+    /// </summary>
+    private int GetFacilityValue(string facilityId)
+    {
+        FacilityData facilityData = MasterDatabase.Instance.GetFacilityData(facilityId);
+        Facility facility = GetFacility(facilityId);
+        
+        if (facilityData == null || facility == null || !facility.isUnlocked)
+        {
+            return 0;
+        }
+        
+        // 解放コスト
+        int value = facilityData.unlockMoneyCost;
+        
+        // 解放に使用したアイテムのコストを加算
+        foreach (var itemCost in facilityData.unlockItemCosts)
+        {
+            ItemData itemData = MasterDatabase.Instance.GetItemData(itemCost.itemId);
+            if (itemData != null)
+            {
+                value += itemData.basePrice * itemCost.quantity;
+            }
+        }
+        
+        // アップグレードコスト × (レベル - 1)
+        if (facility.level > 1)
+        {
+            int upgradeCount = facility.level - 1;
+            value += facilityData.upgradeMoneyCost * upgradeCount;
+            
+            // アップグレードに使用したアイテムのコストを加算
+            foreach (var itemCost in facilityData.upgradeItemCosts)
+            {
+                ItemData itemData = MasterDatabase.Instance.GetItemData(itemCost.itemId);
+                if (itemData != null)
+                {
+                    value += itemData.basePrice * itemCost.quantity * upgradeCount;
+                }
+            }
+        }
+        
+        return value;
+    }
+
+    /// <summary>
+    /// 所持設備の総価値を計算
+    /// </summary>
+    private int GetFacilitiesValue()
+    {
+        int totalValue = 0;
+        foreach (var facility in facilities)
+        {
+            if (facility.isUnlocked)
+            {
+                totalValue += GetFacilityValue(facility.facilityId);
+            }
+        }
+        return totalValue;
+    }
+
+    /// <summary>
+    /// 総資産を計算（所持金 + アイテム価値 + 設備価値）
+    /// </summary>
+    public int GetTotalAssets()
+    {
+        int totalAssets = playerMoney;              // 所持金
+        totalAssets += GetItemsValue();             // アイテムの価値
+        totalAssets += GetFacilitiesValue();        // 設備の価値
+        return totalAssets;
     }
 
     #endregion
