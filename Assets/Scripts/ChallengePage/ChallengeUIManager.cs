@@ -46,12 +46,31 @@ public class ChallengeUIManager : MonoBehaviour
     
     private bool isHintShown = false;
     
+    private void Awake()
+    {
+        Debug.Log("★★★ ChallengeUIManager.Awake() が呼ばれました！ ★★★");
+    }
+    
     private void Start()
     {
+        Debug.Log("★★★ ChallengeUIManager.Start() が呼ばれました！ ★★★");
+        
         // 初期状態設定
         if (resultPanel != null) resultPanel.SetActive(false);
         if (completionPanel != null) completionPanel.SetActive(false);
         if (hintPanel != null) hintPanel.SetActive(false);
+        
+        // InputField デバッグ
+        if (answerInputField != null)
+        {
+            Debug.Log("★★★ InputField が設定されています！ ★★★");
+            answerInputField.onSelect.AddListener((text) => Debug.Log("▶▶▶ InputField がクリック/選択されました！"));
+            answerInputField.onValueChanged.AddListener((text) => Debug.Log($"▶▶▶ InputField テキスト変更: {text}"));
+        }
+        else
+        {
+            Debug.LogError("★★★ answerInputField が null です！Inspector で設定してください！ ★★★");
+        }
         
         // ボタンイベント設定
         if (showHintButton != null)
@@ -290,6 +309,11 @@ public class ChallengeUIManager : MonoBehaviour
         {
             submitButton.onClick.RemoveAllListeners();
             submitButton.onClick.AddListener(action);
+            Debug.Log("ChallengeUIManager: 送信ボタンのリスナーを設定しました");
+        }
+        else
+        {
+            Debug.LogError("ChallengeUIManager: submitButtonがnullです！Inspectorで設定してください。");
         }
     }
     
@@ -302,6 +326,11 @@ public class ChallengeUIManager : MonoBehaviour
         {
             nextButton.onClick.RemoveAllListeners();
             nextButton.onClick.AddListener(action);
+            Debug.Log("ChallengeUIManager: 次へボタンのリスナーを設定しました");
+        }
+        else
+        {
+            Debug.LogWarning("ChallengeUIManager: nextButtonがnullです。");
         }
     }
     
@@ -314,6 +343,11 @@ public class ChallengeUIManager : MonoBehaviour
         {
             backToHubButton.onClick.RemoveAllListeners();
             backToHubButton.onClick.AddListener(action);
+            Debug.Log("ChallengeUIManager: ハブに戻るボタンのリスナーを設定しました");
+        }
+        else
+        {
+            Debug.LogWarning("ChallengeUIManager: backToHubButtonがnullです。");
         }
     }
     

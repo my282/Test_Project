@@ -22,14 +22,28 @@ public class ChallengeSceneController : MonoBehaviour
     private int totalQuestionsCount = 0;
     private int solvedInThisSessionCount = 0;
     
+    private void OnEnable()
+    {
+        Debug.Log("★★★★★ ChallengeSceneController.OnEnable() が呼ばれました！ ★★★★★");
+    }
+    
+    private void Awake()
+    {
+        Debug.Log("★★★ ChallengeSceneController.Awake() が呼ばれました！ ★★★");
+    }
+    
     private void Start()
     {
+        Debug.Log("★★★ ChallengeSceneController.Start() が呼ばれました！ ★★★");
+        
         // UI マネージャー検証
         if (uiManager == null)
         {
             Debug.LogError("ChallengeSceneController: UIManagerが設定されていません");
             return;
         }
+        
+        Debug.Log("★★★ UIManager は設定されています！ ★★★");
         
         // ChallengeMasterDatabase が初期化されているか確認
         if (ChallengeMasterDatabase.Instance == null)
@@ -39,9 +53,11 @@ public class ChallengeSceneController : MonoBehaviour
         }
         
         // ボタンイベント設定
+        DebugLog("ボタンイベントを設定します...");
         uiManager.SetSubmitButtonListener(OnSubmitAnswer);
         uiManager.SetNextButtonListener(OnNextQuestion);
         uiManager.SetBackToHubButtonListener(OnBackToHub);
+        DebugLog("ボタンイベント設定完了");
         
         // ゲーム開始
         InitializeGame();
@@ -118,6 +134,8 @@ public class ChallengeSceneController : MonoBehaviour
     /// </summary>
     private void OnSubmitAnswer()
     {
+        DebugLog("==== 送信ボタンがクリックされました ====");
+        
         if (currentChallenge == null)
         {
             Debug.LogWarning("ChallengeSceneController: 現在の問題がありません");
@@ -174,6 +192,7 @@ public class ChallengeSceneController : MonoBehaviour
     /// </summary>
     private void OnNextQuestion()
     {
+        DebugLog("==== 次へボタンがクリックされました ====");
         currentQuestionIndex++;
         ShowNextQuestion();
     }
@@ -183,6 +202,7 @@ public class ChallengeSceneController : MonoBehaviour
     /// </summary>
     private void OnBackToHub()
     {
+        DebugLog("==== ハブに戻るボタンがクリックされました ====");
         DebugLog("ハブシーンに戻ります");
         
         // SceneLoaderを使用してフェード付き遷移
