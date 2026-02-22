@@ -2,14 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class overimage : MonoBehaviour
 {
     [Header("UI設定")]
     [SerializeField] private Image targetImage;  // 表示/非表示を切り替える画像
+    [SerializeField] private Text[] targetTexts;  // 表示/非表示を切り替えるText (UI Text)
+    [SerializeField] private TextMeshProUGUI[] targetTMPTexts;  // 表示/非表示を切り替えるText (TextMeshPro)
     
     [Header("表示設定")]
     [SerializeField] private bool useAlpha = true;  // true: alpha値で制御、false: enabled で制御
+    [SerializeField] private bool autoDetectChildTexts = true;  // 子要素のTextを自動検出
     
     private bool hasChecked = false;  // 初回チェック済みフラグ
     
@@ -19,6 +23,20 @@ public class overimage : MonoBehaviour
         if (targetImage == null)
         {
             targetImage = GetComponent<Image>();
+        }
+        
+        // 子要素のTextを自動検出
+        if (autoDetectChildTexts)
+        {
+            if (targetTexts == null || targetTexts.Length == 0)
+            {
+                targetTexts = GetComponentsInChildren<Text>(true);
+            }
+            
+            if (targetTMPTexts == null || targetTMPTexts.Length == 0)
+            {
+                targetTMPTexts = GetComponentsInChildren<TextMeshProUGUI>(true);
+            }
         }
         
         // 初期状態を設定
@@ -81,14 +99,72 @@ public class overimage : MonoBehaviour
         if (useAlpha)
         {
             // alpha値を1にして表示
-            Color color = targetImage.color;
-            color.a = 1f;
-            targetImage.color = color;
+            if (targetImage != null)
+            {
+                Color color = targetImage.color;
+                color.a = 1f;
+                targetImage.color = color;
+            }
+            
+            // UI Textのalpha値を1にして表示
+            if (targetTexts != null)
+            {
+                foreach (var text in targetTexts)
+                {
+                    if (text != null)
+                    {
+                        Color color = text.color;
+                        color.a = 1f;
+                        text.color = color;
+                    }
+                }
+            }
+            
+            // TextMeshProのalpha値を1にして表示
+            if (targetTMPTexts != null)
+            {
+                foreach (var text in targetTMPTexts)
+                {
+                    if (text != null)
+                    {
+                        Color color = text.color;
+                        color.a = 1f;
+                        text.color = color;
+                    }
+                }
+            }
         }
         else
         {
             // enabledをtrueにして表示
-            targetImage.enabled = true;
+            if (targetImage != null)
+            {
+                targetImage.enabled = true;
+            }
+            
+            // UI Textのenabledをtrueにして表示
+            if (targetTexts != null)
+            {
+                foreach (var text in targetTexts)
+                {
+                    if (text != null)
+                    {
+                        text.enabled = true;
+                    }
+                }
+            }
+            
+            // TextMeshProのenabledをtrueにして表示
+            if (targetTMPTexts != null)
+            {
+                foreach (var text in targetTMPTexts)
+                {
+                    if (text != null)
+                    {
+                        text.enabled = true;
+                    }
+                }
+            }
         }
     }
     
@@ -100,14 +176,72 @@ public class overimage : MonoBehaviour
         if (useAlpha)
         {
             // alpha値を0にして透明化
-            Color color = targetImage.color;
-            color.a = 0f;
-            targetImage.color = color;
+            if (targetImage != null)
+            {
+                Color color = targetImage.color;
+                color.a = 0f;
+                targetImage.color = color;
+            }
+            
+            // UI Textのalpha値を0にして透明化
+            if (targetTexts != null)
+            {
+                foreach (var text in targetTexts)
+                {
+                    if (text != null)
+                    {
+                        Color color = text.color;
+                        color.a = 0f;
+                        text.color = color;
+                    }
+                }
+            }
+            
+            // TextMeshProのalpha値を0にして透明化
+            if (targetTMPTexts != null)
+            {
+                foreach (var text in targetTMPTexts)
+                {
+                    if (text != null)
+                    {
+                        Color color = text.color;
+                        color.a = 0f;
+                        text.color = color;
+                    }
+                }
+            }
         }
         else
         {
             // enabledをfalseにして非表示
-            targetImage.enabled = false;
+            if (targetImage != null)
+            {
+                targetImage.enabled = false;
+            }
+            
+            // UI Textのenabledをfalseにして非表示
+            if (targetTexts != null)
+            {
+                foreach (var text in targetTexts)
+                {
+                    if (text != null)
+                    {
+                        text.enabled = false;
+                    }
+                }
+            }
+            
+            // TextMeshProのenabledをfalseにして非表示
+            if (targetTMPTexts != null)
+            {
+                foreach (var text in targetTMPTexts)
+                {
+                    if (text != null)
+                    {
+                        text.enabled = false;
+                    }
+                }
+            }
         }
     }
     

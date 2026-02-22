@@ -7,6 +7,10 @@ public class upgrade_phishing_site : MonoBehaviour
     [Header("サウンド設定")]
     [SerializeField] private AudioClip upgradeSE;  // アップグレード成功時のSE
     
+    [Header("Display Reference")]
+    [Tooltip("DisplayProduction component to update after upgrading")]
+    [SerializeField] private DisplayProduction displayProduction;
+    
     private AudioSource audioSource;
     
     void Start()
@@ -42,10 +46,35 @@ public class upgrade_phishing_site : MonoBehaviour
             
             // SEを再生
             PlayUpgradeSE();
+            
+            // DisplayProductionを更新
+            UpdateDisplayProduction();
         }
         else
         {
             Debug.LogWarning("❌ phishing_siteのアップグレードに失敗しました（コスト不足または最大レベル）");
+        }
+    }
+    
+    /// <summary>
+    /// Update DisplayProduction after upgrading facility
+    /// </summary>
+    private void UpdateDisplayProduction()
+    {
+        if (displayProduction != null)
+        {
+            displayProduction.UpdateDisplay();
+            Debug.Log("✅ DisplayProduction updated");
+        }
+        else
+        {
+            // If not assigned in Inspector, try to find it in the scene
+            displayProduction = FindObjectOfType<DisplayProduction>();
+            if (displayProduction != null)
+            {
+                displayProduction.UpdateDisplay();
+                Debug.Log("✅ DisplayProduction found and updated");
+            }
         }
     }
     

@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class build_phishing_site : MonoBehaviour
 {
+    [Header("Display Reference")]
+    [Tooltip("DisplayProduction component to update after building")]
+    [SerializeField] private DisplayProduction displayProduction;
+    
     void Start()
     {
 
@@ -27,6 +31,35 @@ public class build_phishing_site : MonoBehaviour
         
         // FacilityProductionControllerの状態を確認
         CheckProductionController();
+        
+        // DisplayProductionを更新
+        UpdateDisplayProduction();
+    }
+    
+    /// <summary>
+    /// Update DisplayProduction after building facility
+    /// </summary>
+    void UpdateDisplayProduction()
+    {
+        if (displayProduction != null)
+        {
+            displayProduction.UpdateDisplay();
+            Debug.Log("✅ DisplayProduction updated");
+        }
+        else
+        {
+            // If not assigned in Inspector, try to find it in the scene
+            displayProduction = FindObjectOfType<DisplayProduction>();
+            if (displayProduction != null)
+            {
+                displayProduction.UpdateDisplay();
+                Debug.Log("✅ DisplayProduction found and updated");
+            }
+            else
+            {
+                Debug.LogWarning("⚠️ DisplayProduction not found");
+            }
+        }
     }
     
     /// <summary>
